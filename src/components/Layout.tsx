@@ -4,13 +4,12 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 const pageTitles: Record<string, string> = {
-  "/": "لوحة التحكم",
+  "/": "إدارة المشاريع",
   "/projects": "إدارة المشاريع",
   "/inventory": "إدارة المخزون",
   "/procurement": "المشتريات والموردين",
-  "/employees": "الموظفون والعمال",
+  "/employees": "المقاولون",
   "/equipment": "المعدات والآليات",
-  "/finance": "الإدارة المالية",
   "/documents": "المستندات والملفات",
   "/settings": "الإعدادات",
 };

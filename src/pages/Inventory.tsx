@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { Plus, Search, AlertTriangle, Package, Warehouse, BarChart2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, Search, AlertTriangle, Package, Warehouse, BarChart2, Edit, Trash2, FileText, PackagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { inventory } from "@/data/mockData";
+import { inventoryApi } from "@/api/client";
+import InventoryDialog from "@/components/dialogs/InventoryDialog";
+import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
+import MovementReportDialog from "@/components/dialogs/MovementReportDialog";
+import DispenseDialog from "@/components/dialogs/DispenseDialog";
+import AddItemMovementDialog from "@/components/dialogs/AddItemMovementDialog";
 
 const categoryColors: Record<string, string> = {
   "مواد": "badge-info",
@@ -16,17 +22,33 @@ const formatCurrency = (v: number) =>
 export default function Inventory() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("الكل");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [deleteItem, setDeleteItem] = useState<any>(null);
+  const [reportItem, setReportItem] = useState<any>(null);
+  const [dispenseItem, setDispenseItem] = useState<any>(null);
+  const [addMovementItem, setAddMovementItem] = useState<any>(null);
 
   const categories = ["الكل", "مواد", "معدات", "أدوات"];
 
-  const filtered = inventory.filter((item) => {
-    const matchSearch = item.name.includes(search) || item.warehouse.includes(search);
-    const matchCat = category === "الكل" || item.category === category;
-    return matchSearch && matchCat;
+  const { data: inventory = [], isLoading } = useQuery({
+    queryKey: ["inventory", search, category],
+    queryFn: () => inventoryApi.list({ search: search || undefined, category: category !== "الكل" ? category : undefined }).then(r => r.data),
   });
 
-  const lowStock = inventory.filter((i) => i.quantity <= i.minStock);
-  const totalValue = inventory.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const lowStock = inventory.filter((i: any) => Number(i.quantity) <= Number(i.min_stock));
+  const totalValue = inventory.reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unit_price), 0);
+
+  const openEdit = (item: any) => { setEditItem(item); setDialogOpen(true); };
+  const openAdd = () => { setEditItem(null); setDialogOpen(true); };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -56,7 +78,7 @@ export default function Inventory() {
           <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-amber-900">تنبيه: {lowStock.length} أصناف تحتاج إعادة تخزين</p>
-            <p className="text-xs text-amber-700 mt-0.5">{lowStock.map(i => i.name).join("، ")}</p>
+            <p className="text-xs text-amber-700 mt-0.5">{lowStock.map((i: any) => i.name).join("، ")}</p>
           </div>
         </div>
       )}
@@ -78,7 +100,7 @@ export default function Inventory() {
             </button>
           ))}
         </div>
-        <Button className="gap-2 flex-shrink-0">
+        <Button className="gap-2 flex-shrink-0" onClick={openAdd}>
           <Plus className="h-4 w-4" /> إضافة صنف
         </Button>
       </div>
@@ -89,19 +111,20 @@ export default function Inventory() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/40">
-                {["اسم الصنف", "الفئة", "الكمية", "الحد الأدنى", "المستودع", "سعر الوحدة", "القيمة الكلية", "الحالة"].map((h) => (
+                {["كود الصنف", "اسم الصنف", "الفئة", "الكمية", "الحد الأدنى", "المستودع", "سعر الوحدة", "القيمة الكلية", "الحالة", "الإجراءات"].map((h) => (
                   <th key={h} className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => {
-                const isLow = item.quantity <= item.minStock;
+              {inventory.map((item: any) => {
+                const isLow = Number(item.quantity) <= Number(item.min_stock);
                 return (
                   <tr key={item.id} className="border-b border-border/50 table-row-hover last:border-0">
+                    <td className="py-3 px-4 text-xs font-mono text-primary font-semibold">{item.item_code || "–"}</td>
                     <td className="py-3 px-4">
                       <p className="text-xs font-semibold text-foreground">{item.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{item.lastUpdated}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.last_updated}</p>
                     </td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${categoryColors[item.category] || "badge-neutral"}`}>
@@ -110,17 +133,36 @@ export default function Inventory() {
                     </td>
                     <td className="py-3 px-4">
                       <span className={`text-xs font-bold ${isLow ? "text-red-500" : "text-foreground"}`}>
-                        {item.quantity.toLocaleString("ar-SA")} {item.unit}
+                        {Number(item.quantity).toLocaleString("ar-SA")} {item.unit}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs text-muted-foreground">{item.minStock.toLocaleString("ar-SA")} {item.unit}</td>
-                    <td className="py-3 px-4 text-xs text-muted-foreground">{item.warehouse}</td>
-                    <td className="py-3 px-4 text-xs text-muted-foreground">{item.unitPrice.toLocaleString("ar-SA")} ر.س</td>
-                    <td className="py-3 px-4 text-xs font-semibold text-foreground">{formatCurrency(item.quantity * item.unitPrice)}</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">{Number(item.min_stock).toLocaleString("ar-SA")} {item.unit}</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">{item.warehouse_name}</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">{Number(item.unit_price).toLocaleString("ar-SA")} ر.س</td>
+                    <td className="py-3 px-4 text-xs font-semibold text-foreground">{formatCurrency(Number(item.quantity) * Number(item.unit_price))}</td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${isLow ? "badge-danger" : "badge-success"}`}>
                         {isLow ? "مخزون منخفض" : "متوفر"}
                       </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" className="h-7 text-[10px] px-2 font-bold bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800" onClick={() => setDispenseItem(item)}>
+                          صرف صنف
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-7 text-[10px] px-2 font-bold bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800" onClick={() => setAddMovementItem(item)}>
+                          <PackagePlus className="h-3 w-3 ml-1" /> إضافة صنف
+                        </Button>
+                        <button onClick={() => setReportItem(item)} className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-muted transition-colors" title="تقرير الحركة">
+                          <FileText className="h-3.5 w-3.5 text-blue-600" />
+                        </button>
+                        <button onClick={() => openEdit(item)} className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-muted transition-colors" title="تعديل">
+                          <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                        <button onClick={() => setDeleteItem(item)} className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-muted transition-colors" title="حذف">
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -129,6 +171,32 @@ export default function Inventory() {
           </table>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <InventoryDialog open={dialogOpen} onOpenChange={setDialogOpen} editItem={editItem} />
+      <DeleteConfirmDialog
+        open={!!deleteItem}
+        onOpenChange={(open) => !open && setDeleteItem(null)}
+        title="حذف الصنف"
+        description={`هل تريد حذف "${deleteItem?.name}"؟`}
+        deleteFn={() => inventoryApi.delete(deleteItem?.id)}
+        queryKey={["inventory"]}
+      />
+      <MovementReportDialog
+        open={!!reportItem}
+        onOpenChange={(open) => !open && setReportItem(null)}
+        item={reportItem}
+      />
+      <DispenseDialog
+        open={!!dispenseItem}
+        onOpenChange={(open) => !open && setDispenseItem(null)}
+        item={dispenseItem}
+      />
+      <AddItemMovementDialog
+        open={!!addMovementItem}
+        onOpenChange={(open) => !open && setAddMovementItem(null)}
+        item={addMovementItem}
+      />
     </div>
   );
 }

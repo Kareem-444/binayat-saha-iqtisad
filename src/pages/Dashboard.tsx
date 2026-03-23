@@ -1,10 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { 
   FolderKanban, Package, Users, Wrench, DollarSign, 
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle,
   Clock, Activity, BarChart3, ArrowUpRight
 } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { projects, inventory, employees, finances, recentActivities, notifications } from "@/data/mockData";
+import { dashboardApi } from "@/api/client";
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }: {
   title: string; value: string; subtitle: string; icon: any; color: string; trend?: { value: string; up: boolean };
@@ -37,15 +38,34 @@ const projectStatusColors: Record<string, string> = {
   "يكاد يكتمل": "badge-info",
 };
 
-const lowStockItems = inventory.filter((i) => i.quantity <= i.minStock);
-
-const COLORS = ["hsl(221 83% 28%)", "hsl(38 96% 48%)", "hsl(142 71% 40%)", "hsl(199 89% 48%)", "hsl(0 84% 60%)"];
-
-const projectProgressData = projects.map((p) => ({ name: p.name.substring(0, 15) + "...", progress: p.progress }));
-
 export default function Dashboard() {
-  const activeProjects = projects.filter((p) => p.status === "نشط").length;
-  const totalInventoryValue = inventory.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: () => dashboardApi.get().then(r => r.data),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-3">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">جاري تحميل البيانات...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-red-500">حدث خطأ في تحميل البيانات</p>
+      </div>
+    );
+  }
+
+  const { projects, inventory, employees, finances, lowStockItems, recentActivities, notifications } = data;
+  const activeProjects = projects.filter((p: any) => p.status === "نشط").length;
+  const totalInventoryValue = inventory.reduce((sum: number, i: any) => sum + Number(i.quantity) * Number(i.unit_price), 0);
 
   return (
     <div className="space-y-6">
@@ -58,7 +78,7 @@ export default function Dashboard() {
         <div className="relative z-10">
           <p className="text-primary-foreground/70 text-sm">مرحباً بك في</p>
           <h1 className="text-2xl font-black mt-0.5">نظام إدارة المقاولات</h1>
-          <p className="text-primary-foreground/60 text-sm mt-1">لديك {notifications.filter(n => !n.read).length} إشعارات غير مقروءة و {lowStockItems.length} تنبيهات مخزون</p>
+          <p className="text-primary-foreground/60 text-sm mt-1">لديك {notifications.filter((n: any) => !n.is_read).length} إشعارات غير مقروءة و {lowStockItems.length} تنبيهات مخزون</p>
         </div>
         <div className="relative z-10 mt-4 flex gap-3 flex-wrap">
           <div className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
@@ -88,7 +108,7 @@ export default function Dashboard() {
         <StatCard
           title="إجمالي الموظفين"
           value={`${employees.length}`}
-          subtitle={`${employees.filter(e => e.status === "نشط").length} موظف نشط`}
+          subtitle={`${employees.filter((e: any) => e.status === "نشط").length} موظف نشط`}
           icon={Users}
           color="bg-green-100 text-green-700"
         />
@@ -155,7 +175,7 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="space-y-3">
-            {projects.slice(0, 5).map((p) => (
+            {projects.slice(0, 5).map((p: any) => (
               <div key={p.id}>
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-medium text-foreground truncate flex-1 ml-2">{p.name.split(" ").slice(0, 3).join(" ")}</p>
@@ -197,7 +217,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((p) => (
+                {projects.map((p: any) => (
                   <tr key={p.id} className="border-b border-border/50 table-row-hover last:border-0">
                     <td className="py-3 px-4">
                       <p className="text-xs font-semibold text-foreground">{p.name}</p>
@@ -234,10 +254,10 @@ export default function Dashboard() {
               <span className="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">{lowStockItems.length}</span>
             </div>
             <div className="space-y-2">
-              {lowStockItems.map((item) => (
+              {lowStockItems.map((item: any) => (
                 <div key={item.id} className="flex items-center justify-between rounded-lg bg-amber-100 px-3 py-1.5">
                   <p className="text-xs font-medium text-amber-900 truncate">{item.name}</p>
-                  <span className="text-[10px] font-bold text-amber-700 mr-2">{item.quantity}/{item.minStock}</span>
+                  <span className="text-[10px] font-bold text-amber-700 mr-2">{item.quantity}/{item.min_stock}</span>
                 </div>
               ))}
             </div>
@@ -247,14 +267,14 @@ export default function Dashboard() {
           <div className="rounded-xl border border-border bg-card p-4 card-shadow">
             <h3 className="text-sm font-bold text-foreground mb-3">آخر الأنشطة</h3>
             <div className="space-y-3">
-              {recentActivities.slice(0, 4).map((a) => (
+              {recentActivities.slice(0, 4).map((a: any) => (
                 <div key={a.id} className="flex gap-2.5">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 flex-shrink-0 mt-0.5">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-foreground leading-relaxed">{a.action}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{a.user} · {a.time}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{a.user_name}</p>
                   </div>
                 </div>
               ))}

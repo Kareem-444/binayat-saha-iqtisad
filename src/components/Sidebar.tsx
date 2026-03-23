@@ -1,25 +1,20 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Package, FolderKanban, ShoppingCart, Users,
-  Wrench, DollarSign, FileText, Settings, Bell, ChevronLeft,
+  Package, FolderKanban, ShoppingCart, Users,
+  Wrench, FileText, Settings, Bell, ChevronLeft,
   Building2, LogOut, Menu, X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navGroups = [
-  {
-    label: "الرئيسية",
-    items: [
-      { href: "/", icon: LayoutDashboard, label: "لوحة التحكم" },
-    ],
-  },
   {
     label: "إدارة المشاريع",
     items: [
       { href: "/projects", icon: FolderKanban, label: "المشاريع" },
-      { href: "/employees", icon: Users, label: "الموظفون والعمال" },
+      { href: "/employees", icon: Users, label: "المقاولون" },
       { href: "/equipment", icon: Wrench, label: "المعدات والآليات" },
     ],
   },
@@ -31,9 +26,8 @@ const navGroups = [
     ],
   },
   {
-    label: "المالية والوثائق",
+    label: "الوثائق",
     items: [
-      { href: "/finance", icon: DollarSign, label: "الإدارة المالية", badge: "!" },
       { href: "/documents", icon: FileText, label: "المستندات والملفات" },
     ],
   },
@@ -53,6 +47,7 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { user, logout } = useAuth();
 
   const isActive = (href: string) =>
     href === "/" ? location.pathname === "/" : location.pathname.startsWith(href);
@@ -125,16 +120,16 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
       <div className="border-t border-sidebar-border px-3 py-3">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold flex-shrink-0">
-            م
+            {user?.full_name?.[0] || "م"}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-sidebar-foreground truncate">مدير النظام</p>
-              <p className="text-[10px] text-sidebar-foreground/40 truncate">admin@construction.sa</p>
+              <p className="text-xs font-semibold text-sidebar-foreground truncate">{user?.full_name || "مستخدم"}</p>
+              <p className="text-[10px] text-sidebar-foreground/40 truncate">{user?.email || ""}</p>
             </div>
           )}
           {!collapsed && (
-            <button className="text-sidebar-foreground/30 hover:text-sidebar-foreground/60 transition-colors">
+            <button onClick={logout} className="text-sidebar-foreground/30 hover:text-sidebar-foreground/60 transition-colors">
               <LogOut className="h-3.5 w-3.5" />
             </button>
           )}

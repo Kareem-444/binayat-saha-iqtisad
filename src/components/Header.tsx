@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Bell, Search, Menu, X, ChevronDown } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Bell, Search, Menu, X, ChevronDown, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { notifications } from "@/data/mockData";
+import { notificationsApi } from "@/api/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
@@ -14,7 +16,14 @@ interface HeaderProps {
 
 export default function Header({ mobileOpen, setMobileOpen, title }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
-  const unread = notifications.filter((n) => !n.read).length;
+  const { user, logout } = useAuth();
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => notificationsApi.list().then(r => r.data),
+  });
+
+  const unread = notifications.filter((n: any) => !n.is_read).length;
 
   const typeColors: Record<string, string> = {
     warning: "bg-amber-100 text-amber-800",
@@ -69,9 +78,9 @@ export default function Header({ mobileOpen, setMobileOpen, title }: HeaderProps
                   <Badge variant="secondary" className="text-xs">{unread} جديد</Badge>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.map((n) => (
-                    <div key={n.id} className={cn("flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0", !n.read && "bg-muted/30")}>
-                      <div className={cn("flex-shrink-0 mt-0.5 h-2 w-2 rounded-full", !n.read ? "bg-blue-500" : "bg-transparent")} />
+                  {notifications.map((n: any) => (
+                    <div key={n.id} className={cn("flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0", !n.is_read && "bg-muted/30")}>
+                      <div className={cn("flex-shrink-0 mt-0.5 h-2 w-2 rounded-full", !n.is_read ? "bg-blue-500" : "bg-transparent")} />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-foreground">{n.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{n.message}</p>
@@ -89,13 +98,17 @@ export default function Header({ mobileOpen, setMobileOpen, title }: HeaderProps
         </div>
 
         {/* User */}
-        <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-            م
-          </div>
-          <span className="hidden sm:block text-xs font-medium text-foreground">مدير النظام</span>
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+              {user?.full_name?.[0] || "م"}
+            </div>
+            <span className="hidden sm:block text-xs font-medium text-foreground">{user?.full_name || "مستخدم"}</span>
+          </button>
+          <button onClick={logout} className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-muted transition-colors" title="تسجيل الخروج">
+            <LogOut className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </div>
       </div>
     </header>
   );
