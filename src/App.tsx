@@ -15,6 +15,8 @@ import Documents from "./pages/Documents";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import PermissionsList from "./pages/PermissionsList";
+import PermissionForm from "./pages/PermissionForm";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +46,8 @@ const App = () => (
                       <Route path="/" element={<Navigate to="/projects" replace />} />
                       <Route path="/projects" element={<Projects />} />
                       <Route path="/inventory" element={<Inventory />} />
+                      <Route path="/inventory/permissions" element={<PermissionsList />} />
+                      <Route path="/inventory/permissions/new" element={<PermissionForm />} />
                       <Route path="/procurement" element={<Procurement />} />
                       <Route path="/employees" element={<Employees />} />
                       <Route path="/equipment" element={<Equipment />} />

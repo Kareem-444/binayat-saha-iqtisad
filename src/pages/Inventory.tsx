@@ -100,9 +100,14 @@ export default function Inventory() {
             </button>
           ))}
         </div>
-        <Button className="gap-2 flex-shrink-0" onClick={openAdd}>
-          <Plus className="h-4 w-4" /> إضافة صنف
-        </Button>
+        <div className="flex gap-2 flex-shrink-0 flex-wrap">
+          <Button variant="outline" className="gap-2 text-primary border-primary/20 bg-primary/5 hover:bg-primary/10" onClick={() => window.location.href = '/inventory/permissions'}>
+             <FileText className="h-4 w-4" /> أذونات المخزون
+          </Button>
+          <Button className="gap-2" onClick={openAdd}>
+            <Plus className="h-4 w-4" /> إضافة صنف
+          </Button>
+        </div>
       </div>
 
       {/* Table */}

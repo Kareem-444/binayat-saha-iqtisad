@@ -32,6 +32,7 @@ import documentRoutes from './routes/documents.js';
 import notificationRoutes from './routes/notifications.js';
 import activityLogRoutes from './routes/activityLog.js';
 import inventoryMovementRoutes from './routes/inventoryMovements.js';
+import inventoryPermissionsRoutes from './routes/inventoryPermissions.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -88,6 +89,7 @@ app.use('/api/documents', authenticateToken, documentRoutes);
 app.use('/api/notifications', authenticateToken, notificationRoutes);
 app.use('/api/activity-log', authenticateToken, activityLogRoutes);
 app.use('/api/inventory-movements', authenticateToken, inventoryMovementRoutes);
+app.use('/api/inventory-permissions', authenticateToken, inventoryPermissionsRoutes);
 
 // Error handling
 app.use(errorHandler);

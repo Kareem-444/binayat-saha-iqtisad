@@ -173,3 +173,10 @@ export const inventoryMovementsApi = {
   list: (params?: any) => api.get('/inventory-movements', { params }),
   create: (data: any) => api.post('/inventory-movements', data),
 };
+
+// Inventory Permissions
+export const inventoryPermissionsApi = {
+  list: (params?: any) => api.get('/inventory-permissions', { params }),
+  get: (id: number) => api.get(`/inventory-permissions/${id}`),
+  create: (data: any) => api.post('/inventory-permissions', data),
+};
