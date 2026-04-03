@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS warehouses (
 -- =============================================
 CREATE TABLE IF NOT EXISTS inventory_items (
     id SERIAL PRIMARY KEY,
-    item_code VARCHAR(50) UNIQUE,
+    item_code VARCHAR(100) UNIQUE,
     name VARCHAR(200) NOT NULL,
     category VARCHAR(50) NOT NULL CHECK (category IN ('مواد','معدات','أدوات')),
     unit VARCHAR(30) NOT NULL,
@@ -379,6 +379,7 @@ CREATE TABLE IF NOT EXISTS inventory_permission_items (
     quantity NUMERIC(12,2) NOT NULL CHECK (quantity > 0),
     unit VARCHAR(30) NOT NULL,
     price NUMERIC(12,2) DEFAULT 0,
-    total NUMERIC(15,2) GENERATED ALWAYS AS (quantity * price) STORED
+    item_code VARCHAR(100),
+    total_price NUMERIC(12,2)
 );
 

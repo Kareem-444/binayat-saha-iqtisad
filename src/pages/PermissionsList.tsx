@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search, FileText, ArrowUpRight, ArrowDownRight, Printer, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,28 @@ export default function PermissionsList() {
     (p.project_name && p.project_name.includes(search))
   );
 
+  const [printingId, setPrintingId] = useState<number | null>(null);
+
+  const { data: printData, isFetching: isPrintingData } = useQuery({
+    queryKey: ["printPermission", printingId],
+    queryFn: () => printingId ? inventoryPermissionsApi.get(printingId).then(r => r.data) : null,
+    enabled: !!printingId
+  });
+
+  useEffect(() => {
+    const handleAfterPrint = () => setPrintingId(null);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, []);
+
+  useEffect(() => {
+    if (printData && printingId && !isPrintingData) {
+      setTimeout(() => window.print(), 500);
+    }
+  }, [printData, printingId, isPrintingData]);
+
   const handlePrint = (id: number) => {
-    // Open in a new window or trigger a print dialog 
-    // In a real scenario you would have a dedicated print route like /inventory/permissions/print/:id
-    alert("سيتم تنفيذ طباعة الإذن لاحقاً. يجب بناء واجهة طباعة.");
+    setPrintingId(id);
   };
 
   if (isLoading) {
@@ -35,7 +53,8 @@ export default function PermissionsList() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6 print:hidden">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">أذونات المخزون (وارد / منصرف)</h1>
@@ -111,8 +130,8 @@ export default function PermissionsList() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handlePrint(item.id)} title="طباعة">
-                        <Printer className="h-4 w-4" />
+                      <Button variant="ghost" size="sm" onClick={() => handlePrint(item.id)} title="طباعة" disabled={printingId === item.id}>
+                        {printingId === item.id ? <span className="h-4 w-4 border-2 border-primary border-t-transparent flex rounded-full animate-spin" /> : <Printer className="h-4 w-4" />}
                       </Button>
                     </div>
                   </td>
@@ -123,5 +142,79 @@ export default function PermissionsList() {
         </div>
       </div>
     </div>
+
+    {/* Print View */}
+    <div className="hidden print:block p-8 bg-white text-black w-full" dir="rtl">
+      {printData && (
+        <div>
+          <h1 className="text-3xl font-bold text-center mb-6 border-b-2 pb-4">
+            {printData.direction === 'add' ? 'إذن إضافة مشتريات' : 'إذن صرف مخزون'} 
+             - ({printData.type})
+          </h1>
+          <div className="grid grid-cols-2 gap-8 mb-8 border border-gray-300 p-4 rounded text-lg">
+            <div className="space-y-2">
+              <p><strong>رقم الإذن:</strong> <span className="font-mono bg-gray-100 px-2 py-1 rounded">{printData.permission_number}</span></p>
+              <p><strong>التاريخ:</strong> {new Date(printData.date).toLocaleDateString("ar-SA")}</p>
+            </div>
+            <div className="space-y-2">
+              <p><strong>المستودع:</strong> {printData.warehouse_name}</p>
+              <p><strong>المشروع/المورد:</strong> {printData.direction === 'add' ? printData.supplier_name || '—' : printData.project_name || '—'}</p>
+            </div>
+            <div className="col-span-2 space-y-2">
+              <p><strong>ملاحظات:</strong> {printData.notes || '—'}</p>
+            </div>
+          </div>
+          
+          <table className="w-full text-base border-collapse border border-gray-400">
+            <thead>
+              <tr className="bg-gray-200 text-right">
+                <th className="border border-gray-400 p-3">كود الصنف</th>
+                <th className="border border-gray-400 p-3">اسم الصنف</th>
+                <th className="border border-gray-400 p-3">الوحدة</th>
+                <th className="border border-gray-400 p-3 text-center">الكمية</th>
+                <th className="border border-gray-400 p-3 text-center">سعر الوحدة</th>
+                <th className="border border-gray-400 p-3 text-center">الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printData.items?.map((item: any) => (
+                <tr key={item.id} className="border-b border-gray-300">
+                  <td className="border border-gray-400 p-3">{item.item_code || '—'}</td>
+                  <td className="border border-gray-400 p-3 font-semibold">{item.item_name}</td>
+                  <td className="border border-gray-400 p-3">{item.unit}</td>
+                  <td className="border border-gray-400 p-3 text-center font-bold">{item.quantity}</td>
+                  <td className="border border-gray-400 p-3 text-center">
+                     {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(item.price || 0)}
+                  </td>
+                  <td className="border border-gray-400 p-3 text-center font-bold text-lg bg-gray-50">
+                     {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(item.total_price || 0)}
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-gray-200">
+                <td colSpan={5} className="border border-gray-400 p-4 text-left font-bold text-lg">الإجمالي الكلي</td>
+                <td className="border border-gray-400 p-4 text-center font-bold text-xl">
+                   {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(
+                      printData.items?.reduce((sum: number, item: any) => sum + Number(item.total_price || 0), 0)
+                   )} ر.س
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="mt-16 flex justify-between px-12 pb-16">
+             <div className="text-center">
+                 <p className="font-bold mb-8">أمين المستودع</p>
+                 <p>.......................</p>
+             </div>
+             <div className="text-center">
+                 <p className="font-bold mb-8">المدير / المشرف</p>
+                 <p>.......................</p>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+    </>
   );
 }

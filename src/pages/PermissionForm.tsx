@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 const itemSchema = z.object({
   item_id: z.coerce.number().optional(),
+  item_code: z.string().optional(),
   item_name: z.string().min(1, 'اسم الصنف مطلوب'),
   unit: z.string().min(1, 'الوحدة مطلوبة'),
   quantity: z.coerce.number().min(0.01, 'الكمية مطلوبة'),
@@ -64,7 +65,7 @@ export default function PermissionForm() {
       type: directionParam === 'add' ? 'إضافة مشتراه' : 'صرف داخلي',
       date: new Date().toISOString().split('T')[0],
       external: false,
-      items: [{ item_name: '', unit: '', quantity: 1, price: 0 }]
+      items: [{ item_code: '', item_name: '', unit: '', quantity: 1, price: 0 }]
     }
   });
 
@@ -75,6 +76,7 @@ export default function PermissionForm() {
 
   const direction = watch('direction');
   const type = watch('type');
+  const itemsArray = watch('items');
   
   const addTypes = ['إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات'];
   const dispenseTypes = ['صرف داخلي', 'صرف خارجي'];
@@ -186,7 +188,7 @@ export default function PermissionForm() {
         <div className="p-6 bg-card border border-border rounded-xl shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b pb-2">
             <h2 className="text-lg font-bold">الأصناف</h2>
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ item_name: '', unit: '', quantity: 1, price: 0 })} className="gap-1">
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ item_code: '', item_name: '', unit: '', quantity: 1, price: 0 })} className="gap-1">
               <Plus className="h-4 w-4" /> إضافة صنف
             </Button>
           </div>
@@ -197,18 +199,29 @@ export default function PermissionForm() {
             {fields.map((field, index) => (
               <div key={field.id} className="flex flex-wrap items-end gap-3 p-4 border rounded-lg bg-muted/20 relative">
                 
+                <div className="w-24 space-y-2">
+                  <Label>كود الصنف</Label>
+                  <Input {...register(`items.${index}.item_code` as const)} placeholder="اختياري..." />
+                </div>
+
                 <div className="flex-1 min-w-[200px] space-y-2 relative group">
                   <Label>اسم الصنف</Label>
                   <Input 
                     {...register(`items.${index}.item_name` as const)} 
                     placeholder="ابحث أو اكتب اسم جديد..." 
                     onChange={(e) => {
-                       // Custom behavior on change if required
                        register(`items.${index}.item_name` as const).onChange(e);
+                       const val = e.target.value;
+                       const found = inventory.find((i: any) => i.name === val);
+                       if (found) {
+                          setValue(`items.${index}.item_code` as any, found.item_code || '');
+                          setValue(`items.${index}.unit` as any, found.unit || '');
+                          if (direction === 'add') setValue(`items.${index}.price` as any, found.unit_price || 0);
+                       }
                     }}
+                    list={`inventory-items-${index}`}
                   />
-                  {/* Simple datalist alternative for existing items */}
-                  <datalist id="inventory-items">
+                  <datalist id={`inventory-items-${index}`}>
                      {inventory.map((i: any) => <option key={i.id} value={i.name} />)}
                   </datalist>
                   {errors.items?.[index]?.item_name && <p className="text-[10px] text-red-500">{errors.items[index]?.item_name?.message}</p>}
@@ -232,6 +245,13 @@ export default function PermissionForm() {
                     <Input type="number" step="any" {...register(`items.${index}.price` as const)} />
                   </div>
                 )}
+
+                <div className="w-28 space-y-2">
+                   <Label className="text-primary font-bold">الإجمالي</Label>
+                   <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-bold text-primary">
+                     {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))} 
+                   </div>
+                </div>
 
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-10 w-10 text-red-500 hover:bg-red-50 hover:text-red-700">
                   <Trash2 className="h-4 w-4" />

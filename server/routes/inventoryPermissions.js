@@ -8,6 +8,7 @@ const router = Router();
 
 const permissionItemSchema = z.object({
   item_id: z.number().optional().nullable(),
+  item_code: z.string().optional().nullable(),
   item_name: z.string().min(1, 'اسم الصنف مطلوب'),
   quantity: z.number().min(0.01, 'الكمية يجب أن تكون أكبر من الصفر'),
   unit: z.string().min(1, 'الوحدة مطلوبة'),
@@ -131,16 +132,23 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
     // 2. Process Items
     for (const item of items) {
       let currentItemId = item.item_id;
+      let finalItemCode = item.item_code || null;
+      const finalTotalPrice = Number(item.quantity) * Number(item.price);
 
       // Ensure new item exists or create it
       if (!currentItemId) {
         // Create new inventory item
         const newItemRes = await client.query(
-          `INSERT INTO inventory_items (name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
-           VALUES ($1, 'مواد', $2, 0, 0, $3, $4, $5) RETURNING id`,
-          [item.item_name, item.unit, item.price, warehouse_id, warehouse_name]
+          `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
+           VALUES ($1, $2, 'مواد', $3, 0, 0, $4, $5, $6) RETURNING id`,
+          [finalItemCode, item.item_name, item.unit, item.price, warehouse_id, warehouse_name]
         );
         currentItemId = newItemRes.rows[0].id;
+      } else {
+        const existingItemRes = await client.query('SELECT item_code FROM inventory_items WHERE id = $1', [currentItemId]);
+        if (existingItemRes.rows.length > 0) {
+          finalItemCode = existingItemRes.rows[0].item_code || finalItemCode;
+        }
       }
 
       // Check current stock for dispense
@@ -154,9 +162,9 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
 
       // Insert Permission Item
       const permItemRes = await client.query(
-        `INSERT INTO inventory_permission_items (permission_id, item_id, item_name, quantity, unit, price)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [permission.id, currentItemId, item.item_name, item.quantity, item.unit, item.price]
+        `INSERT INTO inventory_permission_items (permission_id, item_id, item_code, item_name, quantity, unit, price, total_price)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [permission.id, currentItemId, finalItemCode, item.item_name, item.quantity, item.unit, item.price, finalTotalPrice]
       );
       insertedItems.push(permItemRes.rows[0]);
 
