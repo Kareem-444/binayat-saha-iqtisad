@@ -75,6 +75,15 @@ export const suppliersApi = {
   delete: (id: number) => api.delete(`/suppliers/${id}`),
 };
 
+// Contractors
+export const contractorsApi = {
+  list: () => api.get('/contractors'),
+  get: (id: number) => api.get(`/contractors/${id}`),
+  create: (data: any) => api.post('/contractors', data),
+  update: (id: number, data: any) => api.put(`/contractors/${id}`, data),
+  delete: (id: number) => api.delete(`/contractors/${id}`),
+};
+
 // Purchase Orders
 export const purchaseOrdersApi = {
   list: (params?: any) => api.get('/purchase-orders', { params }),

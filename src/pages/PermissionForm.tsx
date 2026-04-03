@@ -7,7 +7,7 @@ import { Plus, Trash2, ArrowRight, Save, Search, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { inventoryPermissionsApi, inventoryApi, projectsApi, warehousesApi } from "@/api/client";
+import { inventoryPermissionsApi, inventoryApi, projectsApi, warehousesApi, contractorsApi } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -31,6 +31,9 @@ const formSchema = z.object({
   vehicle_number: z.string().optional(),
   supply_route: z.string().optional(),
   notes: z.string().optional(),
+  target_type: z.enum(['contractor', 'warehouse']).optional(),
+  contractor_id: z.coerce.number().optional().nullable(),
+  target_warehouse_id: z.coerce.number().optional().nullable(),
   date: z.string().optional(),
   items: z.array(itemSchema).min(1, 'يجب إضافة صنف واحد على الأقل')
 });
@@ -57,6 +60,11 @@ export default function PermissionForm() {
     queryFn: () => inventoryApi.list().then(r => r.data)
   });
 
+  const { data: contractors = [] } = useQuery({
+     queryKey: ['contractors'],
+     queryFn: () => contractorsApi.list().then(r => r.data)
+  });
+
   const { register, control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -76,6 +84,7 @@ export default function PermissionForm() {
 
   const direction = watch('direction');
   const type = watch('type');
+  const targetType = watch('target_type');
   const itemsArray = watch('items');
   
   const addTypes = ['إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات'];
@@ -91,7 +100,9 @@ export default function PermissionForm() {
       // Map null values
       const payload = {
         ...data,
-        project_id: isNaN(data.project_id as number) ? null : data.project_id,
+        project_id: isNaN(data.project_id as number) || !data.project_id ? null : Number(data.project_id),
+        contractor_id: isNaN(data.contractor_id as number) || !data.contractor_id ? null : Number(data.contractor_id),
+        target_warehouse_id: isNaN(data.target_warehouse_id as number) || !data.target_warehouse_id ? null : Number(data.target_warehouse_id),
         supplier_name: data.supplier_name || null,
       };
 
@@ -168,6 +179,56 @@ export default function PermissionForm() {
                   {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
+            )}
+
+            {direction === 'dispense' && (
+              <>
+                 <div className="space-y-2">
+                   <Label>نوع جهة الصرف</Label>
+                   <select 
+                     {...register('target_type')} 
+                     onChange={(e) => {
+                         register('target_type').onChange(e);
+                         setValue('contractor_id', null as any);
+                         setValue('target_warehouse_id', null as any);
+                     }}
+                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                   >
+                     <option value="">-- غير محدد --</option>
+                     <option value="contractor">مقاول</option>
+                     <option value="warehouse">مستودع (تحويل)</option>
+                   </select>
+                   {errors.target_type && <p className="text-xs text-red-500">{errors.target_type.message}</p>}
+                 </div>
+
+                 {targetType === 'contractor' && (
+                    <div className="space-y-2">
+                      <Label className="text-red-500">* المقاول (مطلوب)</Label>
+                      <select 
+                        {...register('contractor_id', { required: "المقاول مطلوب" })} 
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="">-- اختر المقاول --</option>
+                        {contractors.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      {errors.contractor_id && <p className="text-xs text-red-500">{errors.contractor_id.message as string}</p>}
+                    </div>
+                 )}
+
+                 {targetType === 'warehouse' && (
+                    <div className="space-y-2">
+                      <Label className="text-red-500">* المستودع الهدف (مطلوب)</Label>
+                      <select 
+                        {...register('target_warehouse_id', { required: "المستودع الهدف مطلوب" })} 
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      >
+                        <option value="">-- اختر المستودع الهدف --</option>
+                        {warhouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                      </select>
+                      {errors.target_warehouse_id && <p className="text-xs text-red-500">{errors.target_warehouse_id.message as string}</p>}
+                    </div>
+                 )}
+              </>
             )}
 
             {direction === 'add' && (

@@ -19,19 +19,18 @@ export default function ContractorDialog({ open, onOpenChange, editItem }: Contr
   const { toast } = useToast();
 
   const [form, setForm] = useState({
-    name: "", role: "", department: "", phone: "",
-    project_name: "", start_date: "", notes: "",
+    name: "", start_date: "", department: "", role: "", phone: "", notes: "",
   });
 
   useEffect(() => {
     if (editItem) {
       setForm({
-        name: editItem.name || "", role: editItem.role || "", department: editItem.department || "",
-        phone: editItem.phone || "", project_name: editItem.project_name || "",
-        start_date: editItem.start_date?.split("T")[0] || "", notes: editItem.notes || "",
+        name: editItem.name || "", start_date: editItem.start_date?.split("T")[0] || "",
+        department: editItem.department || "", role: editItem.role || "",
+        phone: editItem.phone || "", notes: editItem.notes || "",
       });
     } else {
-      setForm({ name: "", role: "", department: "", phone: "", project_name: "", start_date: "", notes: "" });
+      setForm({ name: "", start_date: "", department: "", role: "", phone: "", notes: "" });
     }
   }, [editItem, open]);
 
@@ -39,30 +38,37 @@ export default function ContractorDialog({ open, onOpenChange, editItem }: Contr
     mutationFn: (data: any) => editItem ? employeesApi.update(editItem.id, data) : employeesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
-      toast({ title: editItem ? "تم تحديث المقاول بنجاح" : "تم إضافة المقاول بنجاح" });
+      toast({ title: editItem ? "تم تحديث الموظف بنجاح" : "تم إضافة الموظف بنجاح" });
       onOpenChange(false);
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
   });
 
-  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); mutation.mutate(form); };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) {
+      toast({ title: "الاسم بالكامل مطلوب", variant: "destructive" });
+      return;
+    }
+    mutation.mutate(form);
+  };
   const update = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle>{editItem ? "تعديل مقاول" : "إضافة مقاول جديد"}</DialogTitle>
+          <DialogTitle>{editItem ? "تعديل موظف" : "إضافة موظف جديد"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>الاسم الكامل *</Label>
+              <Label>الاسم بالكامل *</Label>
               <Input required value={form.name} onChange={e => update("name", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>المسمى الوظيفي</Label>
-              <Input placeholder="مثال: مقاول عام" value={form.role} onChange={e => update("role", e.target.value)} />
+              <Label>تاريخ البدء</Label>
+              <Input type="date" value={form.start_date} onChange={e => update("start_date", e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -71,19 +77,13 @@ export default function ContractorDialog({ open, onOpenChange, editItem }: Contr
               <Input value={form.department} onChange={e => update("department", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>رقم الجوال</Label>
-              <Input dir="ltr" value={form.phone} onChange={e => update("phone", e.target.value)} />
+              <Label>المسمى الوظيفي</Label>
+              <Input placeholder="مثال: مهندس موقع" value={form.role} onChange={e => update("role", e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>تاريخ البدء</Label>
-              <Input type="date" value={form.start_date} onChange={e => update("start_date", e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>المشروع الحالي</Label>
-              <Input placeholder="اسم المشروع" value={form.project_name} onChange={e => update("project_name", e.target.value)} />
-            </div>
+          <div className="space-y-2">
+            <Label>رقم الجوال</Label>
+            <Input dir="ltr" value={form.phone} onChange={e => update("phone", e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>ملاحظات</Label>

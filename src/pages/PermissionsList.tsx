@@ -102,7 +102,7 @@ export default function PermissionsList() {
                 <th className="text-right py-3 px-4 font-semibold text-muted-foreground">رقم الإذن</th>
                 <th className="text-right py-3 px-4 font-semibold text-muted-foreground">النوع</th>
                 <th className="text-right py-3 px-4 font-semibold text-muted-foreground">المستودع</th>
-                <th className="text-right py-3 px-4 font-semibold text-muted-foreground">المشروع / المورد</th>
+                <th className="text-right py-3 px-4 font-semibold text-muted-foreground">الجهة / المستلم</th>
                 <th className="text-right py-3 px-4 font-semibold text-muted-foreground">الإجراءات</th>
               </tr>
             </thead>
@@ -126,7 +126,10 @@ export default function PermissionsList() {
                   </td>
                   <td className="py-3 px-4 text-muted-foreground">{item.warehouse_name}</td>
                   <td className="py-3 px-4 text-foreground">
-                    {item.direction === 'add' ? item.supplier_name || '—' : item.project_name || '—'}
+                    {item.direction === 'add' ? item.supplier_name || '—' : 
+                       (item.target_type === 'contractor' ? item.contractor_name + " (مقاول)" :
+                        item.target_type === 'warehouse' ? item.target_warehouse_name + " (مستودع تحويل)" : 
+                        item.project_name || '—')}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1">
@@ -158,7 +161,10 @@ export default function PermissionsList() {
             </div>
             <div className="space-y-2">
               <p><strong>المستودع:</strong> {printData.warehouse_name}</p>
-              <p><strong>المشروع/المورد:</strong> {printData.direction === 'add' ? printData.supplier_name || '—' : printData.project_name || '—'}</p>
+              <p><strong>الجهة / المستلم:</strong> {printData.direction === 'add' ? printData.supplier_name || '—' : 
+                       (printData.target_type === 'contractor' ? printData.contractor_name + " (مقاول)" :
+                        printData.target_type === 'warehouse' ? printData.target_warehouse_name + " (مستودع تحويل)" : 
+                        printData.project_name || '—')}</p>
             </div>
             <div className="col-span-2 space-y-2">
               <p><strong>ملاحظات:</strong> {printData.notes || '—'}</p>

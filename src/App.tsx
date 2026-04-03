@@ -18,6 +18,8 @@ import NotFound from "./pages/NotFound";
 import PermissionsList from "./pages/PermissionsList";
 import PermissionForm from "./pages/PermissionForm";
 
+import Warehouses from "./pages/Warehouses";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -48,7 +50,9 @@ const App = () => (
                       <Route path="/inventory" element={<Inventory />} />
                       <Route path="/inventory/permissions" element={<PermissionsList />} />
                       <Route path="/inventory/permissions/new" element={<PermissionForm />} />
+                      <Route path="/warehouses" element={<Warehouses />} />
                       <Route path="/procurement" element={<Procurement />} />
+
                       <Route path="/employees" element={<Employees />} />
                       <Route path="/equipment" element={<Equipment />} />
                       <Route path="/documents" element={<Documents />} />

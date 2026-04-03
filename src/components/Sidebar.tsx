@@ -14,7 +14,7 @@ const navGroups = [
     label: "إدارة المشاريع",
     items: [
       { href: "/projects", icon: FolderKanban, label: "المشاريع" },
-      { href: "/employees", icon: Users, label: "المقاولون" },
+      { href: "/employees", icon: Users, label: "الموظفين" },
       { href: "/equipment", icon: Wrench, label: "المعدات والآليات" },
     ],
   },
@@ -22,6 +22,7 @@ const navGroups = [
     label: "المخزون والمشتريات",
     items: [
       { href: "/inventory", icon: Package, label: "المخزون", badge: "2" },
+      { href: "/warehouses", icon: Building2, label: "المستودعات" },
       { href: "/procurement", icon: ShoppingCart, label: "المشتريات والموردين" },
     ],
   },

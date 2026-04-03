@@ -27,10 +27,9 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
         <td>${m.movement_date || "–"}</td>
         <td style="color:${m.type === "وارد" ? "#16a34a" : "#dc2626"};font-weight:bold">${m.type}</td>
         <td>${Number(m.quantity).toLocaleString("ar-SA")} ${m.unit || ""}</td>
-        <td>${m.source_location || "–"}</td>
+        <td>${m.type === 'صادر' && m.target_warehouse_name ? m.target_warehouse_name + " (تحويل)" : (m.contractor_name ? m.contractor_name + " (مقاول)" : (m.source_location || "–"))}</td>
         <td>${m.issued_by || "–"}</td>
         <td>${m.project_name || "–"}</td>
-        <td>${m.contractor_name || "–"}</td>
         <td>${m.user_name || "–"}</td>
         <td>${m.notes || "–"}</td>
       </tr>`
@@ -88,7 +87,7 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
   </div>
   <table>
     <thead><tr>
-      <th>#</th><th>التاريخ</th><th>النوع</th><th>الكمية</th><th>الموقع المصدر</th><th>المسؤول</th><th>المشروع</th><th>المقاول</th><th>بواسطة</th><th>ملاحظات</th>
+      <th>#</th><th>التاريخ</th><th>النوع</th><th>الكمية</th><th>الجهة / المصدر</th><th>المسؤول</th><th>المشروع</th><th>بواسطة</th><th>ملاحظات</th>
     </tr></thead>
     <tbody>${rows || '<tr><td colspan="10" style="text-align:center;padding:20px;color:#999">لا توجد حركات مسجلة</td></tr>'}</tbody>
   </table>
@@ -136,7 +135,7 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
-                  {["التاريخ", "النوع", "الكمية", "الموقع المصدر", "المسؤول", "المشروع", "المقاول", "بواسطة", "ملاحظات"].map(h => (
+                  {["التاريخ", "النوع", "الكمية", "الجهة / المصدر", "المسؤول", "المشروع", "بواسطة", "ملاحظات"].map(h => (
                     <th key={h} className="text-right py-2.5 px-3 text-xs font-semibold text-muted-foreground">{h}</th>
                   ))}
                 </tr>
@@ -153,10 +152,11 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-xs font-bold">{Number(m.quantity).toLocaleString("ar-SA")}</td>
-                    <td className="py-2.5 px-3 text-xs text-muted-foreground">{m.source_location || "–"}</td>
+                    <td className="py-2.5 px-3 text-xs text-muted-foreground">
+                      {m.type === 'صادر' && m.target_warehouse_name ? m.target_warehouse_name + " (تحويل)" : (m.contractor_name ? m.contractor_name + " (مقاول)" : (m.source_location || "–"))}
+                    </td>
                     <td className="py-2.5 px-3 text-xs text-muted-foreground">{m.issued_by || "–"}</td>
                     <td className="py-2.5 px-3 text-xs text-muted-foreground">{m.project_name || "–"}</td>
-                    <td className="py-2.5 px-3 text-xs text-muted-foreground">{m.contractor_name || "–"}</td>
                     <td className="py-2.5 px-3 text-xs text-muted-foreground">{m.user_name || "–"}</td>
                     <td className="py-2.5 px-3 text-xs text-muted-foreground">{m.notes || "–"}</td>
                   </tr>

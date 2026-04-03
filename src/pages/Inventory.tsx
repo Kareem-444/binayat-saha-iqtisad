@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, AlertTriangle, Package, Warehouse, BarChart2, Edit, Trash2, FileText, PackagePlus } from "lucide-react";
+import { Plus, Search, AlertTriangle, Package, Warehouse, BarChart2, Edit, Trash2, FileText, PackagePlus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { inventoryApi } from "@/api/client";
+import { inventoryApi, inventoryMovementsApi } from "@/api/client";
+import * as XLSX from "xlsx";
 import InventoryDialog from "@/components/dialogs/InventoryDialog";
 import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
 import MovementReportDialog from "@/components/dialogs/MovementReportDialog";
@@ -101,6 +102,29 @@ export default function Inventory() {
           ))}
         </div>
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
+          <Button variant="outline" className="gap-2 border-green-600 text-green-700 hover:bg-green-50" onClick={async () => {
+            try {
+              const res = await inventoryMovementsApi.list({ limit: 500 });
+              const data = res.data.map((m: any) => ({
+                'اسم الصنف': m.item_name,
+                'نوع الحركة': m.type,
+                'الكمية': m.quantity,
+                'الوحدة': m.unit,
+                'التاريخ': new Date(m.movement_date).toLocaleDateString('ar-SA'),
+                'نوع المستلم': m.employee_name ? 'موظف' : m.destination_warehouse_name ? 'مستودع' : m.contractor_name ? 'مقاول' : '—',
+                'اسم المستلم': m.employee_name || m.destination_warehouse_name || m.contractor_name || '—',
+                'المستودع المصدر': m.warehouse_name || '—',
+                'موظف': m.employee_name || '—',
+                'ملاحظات': m.notes || '—',
+              }));
+              const ws = XLSX.utils.json_to_sheet(data);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+              XLSX.writeFile(wb, `inventory-movements-${new Date().toISOString().split('T')[0]}.xlsx`);
+            } catch { /* ignore */ }
+          }}>
+             <Download className="h-4 w-4" /> تصدير تقرير الحركات
+          </Button>
           <Button variant="outline" className="gap-2 text-primary border-primary/20 bg-primary/5 hover:bg-primary/10" onClick={() => window.location.href = '/inventory/permissions'}>
              <FileText className="h-4 w-4" /> أذونات المخزون
           </Button>

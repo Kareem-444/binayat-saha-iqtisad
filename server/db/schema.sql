@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     movement_date DATE DEFAULT CURRENT_DATE,
     reference_type VARCHAR(50), 
     reference_id INTEGER,
+    contractor_id INTEGER REFERENCES contractors(id) ON DELETE SET NULL,
+    target_warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX idx_movements_item ON inventory_movements(item_id);
@@ -124,6 +126,20 @@ CREATE TABLE IF NOT EXISTS suppliers (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX idx_suppliers_category ON suppliers(category);
+
+-- =============================================
+-- 5b. CONTRACTORS
+-- =============================================
+CREATE TABLE IF NOT EXISTS contractors (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    phone VARCHAR(30),
+    email VARCHAR(150),
+    specialty VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- =============================================
 -- 6. PURCHASE ORDERS
@@ -365,6 +381,9 @@ CREATE TABLE IF NOT EXISTS inventory_permissions (
     notes TEXT,
     date DATE DEFAULT CURRENT_DATE,
     month INTEGER,
+    target_type VARCHAR(20) CHECK (target_type IN ('contractor', 'warehouse')),
+    contractor_id INTEGER REFERENCES contractors(id) ON DELETE SET NULL,
+    target_warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE SET NULL,
     created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()

@@ -26,6 +26,9 @@ const permissionSchema = z.object({
   vehicle_number: z.string().optional().nullable(),
   supply_route: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  target_type: z.enum(['contractor', 'warehouse']).optional().nullable(),
+  contractor_id: z.number().optional().nullable(),
+  target_warehouse_id: z.number().optional().nullable(),
   items: z.array(permissionItemSchema).min(1, 'يجب إضافة صنف واحد على الأقل'),
 });
 
@@ -33,7 +36,14 @@ const permissionSchema = z.object({
 router.get('/', async (req, res, next) => {
   try {
     const { type, warehouse_id, start_date, end_date } = req.query;
-    let query = 'SELECT p.*, w.name as warehouse_name, pr.name as project_name FROM inventory_permissions p JOIN warehouses w ON p.warehouse_id = w.id LEFT JOIN projects pr ON p.project_id = pr.id WHERE 1=1';
+    let query = `SELECT p.*, w.name as warehouse_name, pr.name as project_name,
+                        c.name as contractor_name, tw.name as target_warehouse_name 
+                 FROM inventory_permissions p 
+                 JOIN warehouses w ON p.warehouse_id = w.id 
+                 LEFT JOIN projects pr ON p.project_id = pr.id
+                 LEFT JOIN contractors c ON p.contractor_id = c.id
+                 LEFT JOIN warehouses tw ON p.target_warehouse_id = tw.id
+                 WHERE 1=1`;
     const params = [];
 
     if (type && type !== 'الكل') {
@@ -66,7 +76,13 @@ router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const permResult = await pool.query(
-      'SELECT p.*, w.name as warehouse_name, pr.name as project_name FROM inventory_permissions p JOIN warehouses w ON p.warehouse_id = w.id LEFT JOIN projects pr ON p.project_id = pr.id WHERE p.id = $1',
+      `SELECT p.*, w.name as warehouse_name, pr.name as project_name, c.name as contractor_name, tw.name as target_warehouse_name 
+       FROM inventory_permissions p 
+       JOIN warehouses w ON p.warehouse_id = w.id 
+       LEFT JOIN projects pr ON p.project_id = pr.id 
+       LEFT JOIN contractors c ON p.contractor_id = c.id
+       LEFT JOIN warehouses tw ON p.target_warehouse_id = tw.id
+       WHERE p.id = $1`,
       [id]
     );
 
@@ -96,8 +112,16 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
     
     const {
       permission_number, type, direction, project_id, warehouse_id,
-      supplier_name, external, vehicle_number, supply_route, notes, items
+      supplier_name, external, vehicle_number, supply_route, notes, items,
+      target_type, contractor_id, target_warehouse_id
     } = req.body;
+
+    if (direction === 'dispense') {
+      if (!target_type) throw new Error("نوع جهة الصرف مطلوب");
+      if (target_type === 'contractor' && !contractor_id) throw new Error("المقاول مطلوب");
+      if (target_type === 'warehouse' && !target_warehouse_id) throw new Error("المستودع الهدف مطلوب");
+      if (contractor_id && target_warehouse_id) throw new Error("لا يمكن اختيار المقاول والمستودع معاً");
+    }
 
     const current_date = new Date();
     const month = current_date.getMonth() + 1;
@@ -110,9 +134,9 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
 
     // 1. Insert Permission
     const permResult = await client.query(
-      `INSERT INTO inventory_permissions (permission_number, type, direction, project_id, warehouse_id, supplier_name, external, vehicle_number, supply_route, notes, date, month, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE, $11, $12) RETURNING *`,
-      [permission_number, type, direction, project_id, warehouse_id, supplier_name, external, vehicle_number, supply_route, notes, month, req.user?.id || null]
+      `INSERT INTO inventory_permissions (permission_number, type, direction, project_id, warehouse_id, supplier_name, external, vehicle_number, supply_route, notes, date, month, target_type, contractor_id, target_warehouse_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE, $11, $12, $13, $14, $15) RETURNING *`,
+      [permission_number, type, direction, project_id, warehouse_id, supplier_name, external, vehicle_number, supply_route, notes, month, target_type || null, contractor_id || null, target_warehouse_id || null, req.user?.id || null]
     );
     const permission = permResult.rows[0];
 
@@ -184,13 +208,40 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
         );
       }
 
-      // Insert Movement
+      // Insert Movement (Source)
       const movementType = direction === 'add' ? 'وارد' : 'صادر';
       await client.query(
-        `INSERT INTO inventory_movements (item_id, type, quantity, project_id, project_name, notes, reference_type, reference_id)
-         VALUES ($1, $2, $3, $4, $5, $6, 'permission', $7)`,
-        [currentItemId, movementType, item.quantity, project_id, project_name, `إذن ${permission_number}`, permission.id]
+        `INSERT INTO inventory_movements (item_id, type, quantity, project_id, project_name, notes, reference_type, reference_id, contractor_id, target_warehouse_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'permission', $7, $8, $9)`,
+        [currentItemId, movementType, item.quantity, project_id, project_name, `إذن ${permission_number}`, permission.id, contractor_id || null, target_warehouse_id || null]
       );
+
+      // Warehouse Transfer Logic
+      if (direction === 'dispense' && target_type === 'warehouse' && target_warehouse_id) {
+         let targetItemId;
+         const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [item.item_name, target_warehouse_id]);
+         const targetWHR = await client.query('SELECT name FROM warehouses WHERE id = $1', [target_warehouse_id]);
+         const target_warehouse_name = targetWHR.rows[0]?.name;
+
+         if (targetItemRes.rows.length > 0) {
+            targetItemId = targetItemRes.rows[0].id;
+            await client.query('UPDATE inventory_items SET quantity = quantity + $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, targetItemId]);
+         } else {
+            const newItemTarget = await client.query(
+               `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
+                VALUES ($1, $2, 'مواد', $3, $4, 0, $5, $6, $7) RETURNING id`,
+               [finalItemCode, item.item_name, item.unit, item.quantity, item.price, target_warehouse_id, target_warehouse_name]
+            );
+            targetItemId = newItemTarget.rows[0].id;
+         }
+
+         // IN Movement for Target Warehouse
+         await client.query(
+            `INSERT INTO inventory_movements (item_id, type, quantity, notes, reference_type, reference_id, source_location)
+             VALUES ($1, 'وارد', $2, $3, 'permission', $4, $5)`,
+            [targetItemId, item.quantity, `تحويل من مستودع ${warehouse_name} (إذن ${permission_number})`, permission.id, warehouse_name]
+         );
+      }
     }
 
     await client.query('COMMIT');
@@ -205,7 +256,7 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
   } catch (err) {
     await client.query('ROLLBACK');
     // If our manual errors were thrown, return 400
-    if (err.message.includes('رقم الإذن') || err.message.includes('غير كافية')) {
+    if (err.message.includes('رقم الإذن') || err.message.includes('غير كافية') || err.message.includes('مطلوب') || err.message.includes('لا يمكن')) {
        return res.status(400).json({ error: err.message });
     }
     next(err);

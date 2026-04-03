@@ -1,26 +1,19 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Phone, Briefcase, DollarSign, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Phone, Briefcase, Edit, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { employeesApi } from "@/api/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { employeesApi, inventoryMovementsApi } from "@/api/client";
 import ContractorDialog from "@/components/dialogs/ContractorDialog";
 import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
-
-const statusColors: Record<string, string> = {
-  "نشط": "badge-success",
-  "إجازة": "badge-warning",
-  "منتهي": "badge-neutral",
-};
-
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(v) + " ر.س";
 
 export default function Employees() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [deleteItem, setDeleteItem] = useState<any>(null);
+  const [movementsEmployee, setMovementsEmployee] = useState<any>(null);
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["employees", search],
@@ -41,15 +34,11 @@ export default function Employees() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {[
-          { label: "إجمالي المقاولين", value: employees.length },
-          { label: "مقاولون نشطون", value: employees.filter((e: any) => e.status === "نشط").length },
+          { label: "إجمالي الموظفين", value: employees.length },
+          { label: "موظفون نشطون", value: employees.filter((e: any) => e.status === "نشط").length },
           { label: "في إجازة", value: employees.filter((e: any) => e.status === "إجازة").length },
-          {
-            label: "إجمالي المستحقات",
-            value: formatCurrency(employees.filter((e: any) => e.salary_type === "شهري").reduce((s: number, e: any) => s + Number(e.salary), 0)),
-          },
         ].map((s) => (
           <div key={s.label} className="stat-card">
             <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
@@ -62,14 +51,14 @@ export default function Employees() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="بحث في المقاولين..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" />
+          <Input placeholder="بحث في الموظفين..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" />
         </div>
         <Button className="gap-2 flex-shrink-0" onClick={openAdd}>
-          <Plus className="h-4 w-4" /> مقاول جديد
+          <Plus className="h-4 w-4" /> موظف جديد
         </Button>
       </div>
 
-      {/* Contractor Cards */}
+      {/* Employee Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {employees.map((emp: any) => {
           const initials = emp.name.split(" ").slice(0, 2).map((n: string) => n[0]).join("");
@@ -83,11 +72,8 @@ export default function Employees() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-bold text-foreground truncate">{emp.name}</h3>
-                  <p className="text-xs text-muted-foreground">{emp.role}</p>
+                  <p className="text-xs text-muted-foreground">{emp.role || "—"}</p>
                 </div>
-                <span className={`flex-shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${statusColors[emp.status] || "badge-neutral"}`}>
-                  {emp.status}
-                </span>
               </div>
 
               <div className="space-y-1.5 text-xs text-muted-foreground">
@@ -99,22 +85,14 @@ export default function Employees() {
                   <Phone className="h-3 w-3" />
                   <span dir="ltr">{emp.phone || "–"}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-3 w-3" />
-                  <span>{formatCurrency(Number(emp.salary))} / {emp.salary_type}</span>
-                </div>
               </div>
-
-              {emp.project_name && (
-                <div className="mt-3 pt-3 border-t border-border">
-                  <p className="text-[10px] text-muted-foreground">مشروع حالي:</p>
-                  <p className="text-xs font-semibold text-primary mt-0.5">{emp.project_name}</p>
-                </div>
-              )}
 
               {/* Actions */}
               <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs gap-1" onClick={() => openEdit(emp)}>
+                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs gap-1" onClick={() => setMovementsEmployee(emp)}>
+                  <Eye className="h-3 w-3" /> المواد المصروفة
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openEdit(emp)}>
                   <Edit className="h-3 w-3" /> تعديل
                 </Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-red-500 hover:text-red-600" onClick={() => setDeleteItem(emp)}>
@@ -131,11 +109,62 @@ export default function Employees() {
       <DeleteConfirmDialog
         open={!!deleteItem}
         onOpenChange={(open) => !open && setDeleteItem(null)}
-        title="حذف المقاول"
+        title="حذف الموظف"
         description={`هل تريد حذف "${deleteItem?.name}"؟`}
         deleteFn={() => employeesApi.delete(deleteItem?.id)}
         queryKey={["employees"]}
       />
+      {movementsEmployee && (
+        <EmployeeMovementsDialog employee={movementsEmployee} onClose={() => setMovementsEmployee(null)} />
+      )}
     </div>
+  );
+}
+
+// TASK 5: Employee movements dialog
+function EmployeeMovementsDialog({ employee, onClose }: { employee: any; onClose: () => void }) {
+  const { data: movements = [], isLoading } = useQuery({
+    queryKey: ["employeeMovements", employee.id],
+    queryFn: () => inventoryMovementsApi.list({ employee_id: employee.id }).then(r => r.data),
+  });
+
+  return (
+    <Dialog open={!!employee} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-xl">المواد المصروفة للموظف: {employee.name}</DialogTitle>
+        </DialogHeader>
+        <div className="border rounded-lg overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50 border-b">
+                <th className="text-right p-3">اسم الصنف</th>
+                <th className="text-right p-3">الكمية</th>
+                <th className="text-right p-3">الوحدة</th>
+                <th className="text-right p-3">التاريخ</th>
+                <th className="text-right p-3">ملاحظات</th>
+                <th className="text-right p-3">المسؤول</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan={6} className="text-center p-6">جاري التحميل...</td></tr>
+              ) : movements.length === 0 ? (
+                <tr><td colSpan={6} className="text-center p-6 text-muted-foreground">لا يوجد مواد مصروفة لهذا الموظف</td></tr>
+              ) : movements.map((m: any) => (
+                <tr key={m.id} className="border-b last:border-0 hover:bg-muted/10">
+                  <td className="p-3 font-bold">{m.item_name}</td>
+                  <td className="p-3 font-bold text-red-600">{m.quantity}</td>
+                  <td className="p-3">{m.unit}</td>
+                  <td className="p-3">{new Date(m.movement_date).toLocaleDateString('ar-SA')}</td>
+                  <td className="p-3 text-muted-foreground">{m.notes || "—"}</td>
+                  <td className="p-3 text-muted-foreground">{m.issued_by || m.user_name || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
