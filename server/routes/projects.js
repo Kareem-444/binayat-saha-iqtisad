@@ -8,7 +8,7 @@ const router = Router();
 
 const projectSchema = z.object({
   name: z.string().min(1, 'اسم المشروع مطلوب'),
-  client: z.string().min(1, 'اسم العميل مطلوب'),
+  client: z.string().optional().default(""),
   location: z.string().optional(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),

@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { projectsApi } from "@/api/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,21 +19,19 @@ export default function ProjectDialog({ open, onOpenChange, editItem }: ProjectD
   const { toast } = useToast();
 
   const [form, setForm] = useState({
-    name: "", client: "", location: "", start_date: "", end_date: "",
-    budget: 0, spent: 0, progress: 0,
-    status: "نشط" as string, manager_name: "", description: "",
+    name: "", location: "", start_date: "", end_date: "",
+    description: "",
   });
 
   useEffect(() => {
     if (editItem) {
       setForm({
-        name: editItem.name || "", client: editItem.client || "", location: editItem.location || "",
+        name: editItem.name || "", location: editItem.location || "",
         start_date: editItem.start_date?.split("T")[0] || "", end_date: editItem.end_date?.split("T")[0] || "",
-        budget: Number(editItem.budget) || 0, spent: Number(editItem.spent) || 0, progress: Number(editItem.progress) || 0,
-        status: editItem.status || "نشط", manager_name: editItem.manager_name || "", description: editItem.description || "",
+        description: editItem.description || "",
       });
     } else {
-      setForm({ name: "", client: "", location: "", start_date: "", end_date: "", budget: 0, spent: 0, progress: 0, status: "نشط", manager_name: "", description: "" });
+      setForm({ name: "", location: "", start_date: "", end_date: "", description: "" });
     }
   }, [editItem, open]);
 
@@ -64,18 +61,8 @@ export default function ProjectDialog({ open, onOpenChange, editItem }: ProjectD
               <Input required value={form.name} onChange={e => update("name", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>العميل *</Label>
-              <Input required value={form.client} onChange={e => update("client", e.target.value)} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
               <Label>الموقع</Label>
               <Input value={form.location} onChange={e => update("location", e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>مدير المشروع</Label>
-              <Input value={form.manager_name} onChange={e => update("manager_name", e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -86,31 +73,6 @@ export default function ProjectDialog({ open, onOpenChange, editItem }: ProjectD
             <div className="space-y-2">
               <Label>تاريخ الانتهاء</Label>
               <Input type="date" value={form.end_date} onChange={e => update("end_date", e.target.value)} />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>الميزانية</Label>
-              <Input type="number" min={0} value={form.budget} onChange={e => update("budget", Number(e.target.value))} />
-            </div>
-            <div className="space-y-2">
-              <Label>المصروف</Label>
-              <Input type="number" min={0} value={form.spent} onChange={e => update("spent", Number(e.target.value))} />
-            </div>
-            <div className="space-y-2">
-              <Label>نسبة الإنجاز %</Label>
-              <Input type="number" min={0} max={100} value={form.progress} onChange={e => update("progress", Number(e.target.value))} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>الحالة</Label>
-              <Select value={form.status} onValueChange={v => update("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {["نشط", "يكاد يكتمل", "مكتمل", "متوقف", "ملغي"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <div className="space-y-2">
