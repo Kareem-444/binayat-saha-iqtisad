@@ -3,11 +3,11 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, Trash2, ArrowRight, Save, Search, Package } from "lucide-react";
+import { Plus, Trash2, ArrowRight, Save, Search, Package, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { inventoryPermissionsApi, inventoryApi, projectsApi, warehousesApi, contractorsApi } from "@/api/client";
+import { inventoryPermissionsApi, inventoryApi, projectsApi, warehousesApi, employeesApi } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import ItemSelector from "@/components/dialogs/ItemSelector";
@@ -21,6 +21,7 @@ const itemSchema = z.object({
   price: z.coerce.number().optional().default(0),
   stock_quantity: z.coerce.number().optional().default(0),
   stock_error: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 const formSchema = z.object({
@@ -32,10 +33,11 @@ const formSchema = z.object({
   supplier_name: z.string().optional(),
   external: z.boolean().default(false),
   vehicle_number: z.string().optional(),
+  driver_name: z.string().optional(),
   supply_route: z.string().optional(),
   notes: z.string().optional(),
   target_type: z.enum(['contractor', 'warehouse']).optional(),
-  contractor_id: z.coerce.number().optional().nullable(),
+  employee_id: z.coerce.number().optional().nullable(),
   target_warehouse_id: z.coerce.number().optional().nullable(),
   date: z.string().optional(),
   items: z.array(itemSchema).min(1, 'يجب إضافة صنف واحد على الأقل')
@@ -63,9 +65,10 @@ export default function PermissionForm() {
     queryFn: () => inventoryApi.list().then(r => r.data)
   });
 
-  const { data: contractors = [] } = useQuery({
-     queryKey: ['contractors'],
-     queryFn: () => contractorsApi.list().then(r => r.data)
+  // Use employees (المقاولون) instead of contractors
+  const { data: employees = [] } = useQuery({
+     queryKey: ['employees'],
+     queryFn: () => employeesApi.list().then(r => r.data)
   });
 
   const { register, control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
@@ -76,7 +79,7 @@ export default function PermissionForm() {
       type: directionParam === 'add' ? 'إضافة مشتراه' : 'صرف داخلي',
       date: new Date().toISOString().split('T')[0],
       external: false,
-      items: [{ item_id: null, item_code: '', item_name: '', unit: '', quantity: 1, price: 0, stock_quantity: 0, stock_error: '' }]
+      items: [{ item_id: null, item_code: '', item_name: '', unit: '', quantity: 1, price: 0, stock_quantity: 0, stock_error: '', notes: '' }]
     }
   });
 
@@ -104,9 +107,11 @@ export default function PermissionForm() {
       const payload = {
         ...data,
         project_id: isNaN(data.project_id as number) || !data.project_id ? null : Number(data.project_id),
-        contractor_id: isNaN(data.contractor_id as number) || !data.contractor_id ? null : Number(data.contractor_id),
+        employee_id: isNaN(data.employee_id as number) || !data.employee_id ? null : Number(data.employee_id),
         target_warehouse_id: isNaN(data.target_warehouse_id as number) || !data.target_warehouse_id ? null : Number(data.target_warehouse_id),
         supplier_name: data.supplier_name || null,
+        vehicle_number: data.vehicle_number || null,
+        driver_name: data.driver_name || null,
       };
 
       await inventoryPermissionsApi.create(payload);
@@ -116,6 +121,12 @@ export default function PermissionForm() {
       toast.error(err.response?.data?.error || 'حدث خطأ أثناء الحفظ');
     }
   };
+
+  // Calculate grand total for addition permissions
+  const grandTotal = useMemo(() => {
+    if (direction !== 'add') return 0;
+    return (itemsArray || []).reduce((sum, item) => sum + (Number(item.quantity || 0) * Number(item.price || 0)), 0);
+  }, [itemsArray, direction]);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -192,7 +203,7 @@ export default function PermissionForm() {
                      {...register('target_type')} 
                      onChange={(e) => {
                          register('target_type').onChange(e);
-                         setValue('contractor_id', null as any);
+                         setValue('employee_id', null as any);
                          setValue('target_warehouse_id', null as any);
                      }}
                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
@@ -208,13 +219,13 @@ export default function PermissionForm() {
                     <div className="space-y-2">
                       <Label className="text-red-500">* المقاول (مطلوب)</Label>
                       <select 
-                        {...register('contractor_id', { required: "المقاول مطلوب" })} 
+                        {...register('employee_id', { required: "المقاول مطلوب" })} 
                         className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                       >
                         <option value="">-- اختر المقاول --</option>
-                        {contractors.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {employees.map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
                       </select>
-                      {errors.contractor_id && <p className="text-xs text-red-500">{errors.contractor_id.message as string}</p>}
+                      {errors.employee_id && <p className="text-xs text-red-500">{errors.employee_id.message as string}</p>}
                     </div>
                  )}
 
@@ -240,6 +251,20 @@ export default function PermissionForm() {
                 <Input {...register('supplier_name')} placeholder="اختياري..." />
               </div>
             )}
+
+            {/* Vehicle number and driver name for dispatch */}
+            {direction === 'dispense' && (
+              <>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1"><Truck className="h-3.5 w-3.5" /> رقم السيارة</Label>
+                  <Input {...register('vehicle_number')} placeholder="رقم السيارة..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>اسم السائق</Label>
+                  <Input {...register('driver_name')} placeholder="اسم السائق..." />
+                </div>
+              </>
+            )}
             
             <div className="space-y-2 md:col-span-3">
               <Label>ملاحظات</Label>
@@ -252,7 +277,7 @@ export default function PermissionForm() {
         <div className="p-6 bg-card border border-border rounded-xl shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b pb-2">
             <h2 className="text-lg font-bold">الأصناف</h2>
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ item_id: null, item_code: '', item_name: '', unit: '', quantity: 1, price: 0, stock_quantity: 0, stock_error: '' })} className="gap-1">
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ item_id: null, item_code: '', item_name: '', unit: '', quantity: 1, price: 0, stock_quantity: 0, stock_error: '', notes: '' })} className="gap-1">
               <Plus className="h-4 w-4" /> إضافة صنف
             </Button>
           </div>
@@ -261,63 +286,115 @@ export default function PermissionForm() {
 
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex flex-wrap items-end gap-3 p-4 border rounded-lg bg-muted/20 relative">
-
-                <div className="flex-1 min-w-[250px] space-y-2">
-                  <Label>الصنف</Label>
-                  <ItemSelector
-                    value={itemsArray[index]?.item_id || null}
-                    onChange={(itemId, item) => {
-                      if (item) {
-                        setValue(`items.${index}.item_id` as any, itemId);
-                        setValue(`items.${index}.item_code` as any, item.item_code || '');
-                        setValue(`items.${index}.item_name` as any, item.name || '');
-                        setValue(`items.${index}.unit` as any, item.unit || '');
-                        setValue(`items.${index}.stock_quantity` as any, Number(item.quantity || 0));
-                        if (direction === 'add') {
-                          setValue(`items.${index}.price` as any, item.unit_price || 0);
-                        }
-                      }
-                    }}
-                    showStockValidation={direction === 'dispense'}
-                    movementType="صادر"
-                  />
-                  {errors.items?.[index]?.item_name && <p className="text-[10px] text-red-500">{errors.items[index]?.item_name?.message}</p>}
-                </div>
-
-                <div className="w-28 space-y-2">
-                  <Label>الوحدة</Label>
-                  <Input {...register(`items.${index}.unit` as const)} placeholder="حبة، طن..." />
-                  {errors.items?.[index]?.unit && <p className="text-[10px] text-red-500">{errors.items[index]?.unit?.message}</p>}
-                </div>
-
-                <div className="w-28 space-y-2">
-                  <Label>الكمية</Label>
-                  <Input type="number" step="any" {...register(`items.${index}.quantity` as const)} />
-                  {errors.items?.[index]?.quantity && <p className="text-[10px] text-red-500">{errors.items[index]?.quantity?.message}</p>}
-                </div>
-
+              <div key={field.id} className="p-4 border rounded-lg bg-muted/20 relative space-y-3">
+                
+                {/* === ADDITION MODE: Manual entry === */}
                 {direction === 'add' && (
-                  <div className="w-28 space-y-2">
-                    <Label>سعر الوحدة</Label>
-                    <Input type="number" step="any" {...register(`items.${index}.price` as const)} />
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="w-32 space-y-2">
+                      <Label>كود الصنف</Label>
+                      <Input {...register(`items.${index}.item_code` as const)} placeholder="الكود..." />
+                    </div>
+
+                    <div className="flex-1 min-w-[180px] space-y-2">
+                      <Label>اسم الصنف *</Label>
+                      <Input {...register(`items.${index}.item_name` as const)} placeholder="اسم الصنف..." />
+                      {errors.items?.[index]?.item_name && <p className="text-[10px] text-red-500">{errors.items[index]?.item_name?.message}</p>}
+                    </div>
+
+                    <div className="w-24 space-y-2">
+                      <Label>الوحدة *</Label>
+                      <Input {...register(`items.${index}.unit` as const)} placeholder="حبة، طن..." />
+                      {errors.items?.[index]?.unit && <p className="text-[10px] text-red-500">{errors.items[index]?.unit?.message}</p>}
+                    </div>
+
+                    <div className="w-24 space-y-2">
+                      <Label>الكمية *</Label>
+                      <Input type="number" step="any" {...register(`items.${index}.quantity` as const)} />
+                      {errors.items?.[index]?.quantity && <p className="text-[10px] text-red-500">{errors.items[index]?.quantity?.message}</p>}
+                    </div>
+
+                    <div className="w-28 space-y-2">
+                      <Label>سعر الوحدة</Label>
+                      <Input type="number" step="any" {...register(`items.${index}.price` as const)} />
+                    </div>
+
+                    <div className="w-28 space-y-2">
+                       <Label className="text-primary font-bold">الإجمالي</Label>
+                       <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-bold text-primary">
+                         {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))} 
+                       </div>
+                    </div>
+
+                    <div className="flex-1 min-w-[140px] space-y-2">
+                      <Label>ملاحظات</Label>
+                      <Input {...register(`items.${index}.notes` as const)} placeholder="ملاحظات..." />
+                    </div>
+
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-10 w-10 text-red-500 hover:bg-red-50 hover:text-red-700">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
 
-                <div className="w-28 space-y-2">
-                   <Label className="text-primary font-bold">الإجمالي</Label>
-                   <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-bold text-primary">
-                     {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))} 
-                   </div>
-                </div>
+                {/* === DISPENSE MODE: Select from inventory === */}
+                {direction === 'dispense' && (
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex-1 min-w-[250px] space-y-2">
+                      <Label>الصنف</Label>
+                      <ItemSelector
+                        value={itemsArray[index]?.item_id || null}
+                        onChange={(itemId, item) => {
+                          if (item) {
+                            setValue(`items.${index}.item_id` as any, itemId);
+                            setValue(`items.${index}.item_code` as any, item.item_code || '');
+                            setValue(`items.${index}.item_name` as any, item.name || '');
+                            setValue(`items.${index}.unit` as any, item.unit || '');
+                            setValue(`items.${index}.stock_quantity` as any, Number(item.quantity || 0));
+                          }
+                        }}
+                        showStockValidation={true}
+                        movementType="صادر"
+                      />
+                      {errors.items?.[index]?.item_name && <p className="text-[10px] text-red-500">{errors.items[index]?.item_name?.message}</p>}
+                    </div>
 
-                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-10 w-10 text-red-500 hover:bg-red-50 hover:text-red-700">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                    <div className="w-28 space-y-2">
+                      <Label>الوحدة</Label>
+                      <Input {...register(`items.${index}.unit` as const)} placeholder="حبة، طن..." />
+                      {errors.items?.[index]?.unit && <p className="text-[10px] text-red-500">{errors.items[index]?.unit?.message}</p>}
+                    </div>
+
+                    <div className="w-28 space-y-2">
+                      <Label>الكمية</Label>
+                      <Input type="number" step="any" {...register(`items.${index}.quantity` as const)} />
+                      {errors.items?.[index]?.quantity && <p className="text-[10px] text-red-500">{errors.items[index]?.quantity?.message}</p>}
+                    </div>
+
+                    <div className="flex-1 min-w-[160px] space-y-2">
+                      <Label>ملاحظات</Label>
+                      <Input {...register(`items.${index}.notes` as const)} placeholder="ملاحظات..." />
+                    </div>
+
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-10 w-10 text-red-500 hover:bg-red-50 hover:text-red-700">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
 
               </div>
             ))}
           </div>
+
+          {/* Grand Total for Addition */}
+          {direction === 'add' && itemsArray && itemsArray.length > 0 && (
+            <div className="flex justify-end items-center gap-4 pt-4 border-t">
+              <span className="text-base font-bold text-foreground">الإجمالي الكلي:</span>
+              <span className="text-xl font-black text-primary bg-primary/5 border border-primary/20 rounded-lg px-6 py-2">
+                {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(grandTotal)} ر.س
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-3">

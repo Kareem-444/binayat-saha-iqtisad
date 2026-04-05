@@ -121,44 +121,67 @@ export default function Employees() {
   );
 }
 
-// TASK 5: Employee movements dialog
+// Enhanced Employee movements dialog with full item details
 function EmployeeMovementsDialog({ employee, onClose }: { employee: any; onClose: () => void }) {
   const { data: movements = [], isLoading } = useQuery({
     queryKey: ["employeeMovements", employee.id],
     queryFn: () => inventoryMovementsApi.list({ employee_id: employee.id }).then(r => r.data),
   });
 
+  // Calculate total value of dispatched items
+  const totalValue = movements.reduce((sum: number, m: any) => sum + (Number(m.quantity || 0) * Number(m.unit_price || 0)), 0);
+
   return (
     <Dialog open={!!employee} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-xl">المواد المصروفة للمقاول: {employee.name}</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            إجمالي الحركات: {movements.length} حركة
+            {totalValue > 0 && (
+              <span className="mr-4 font-bold text-primary">
+                | إجمالي القيمة: {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(totalValue)} ر.س
+              </span>
+            )}
+          </p>
         </DialogHeader>
         <div className="border rounded-lg overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="text-right p-3">اسم الصنف</th>
-                <th className="text-right p-3">الكمية</th>
-                <th className="text-right p-3">الوحدة</th>
-                <th className="text-right p-3">التاريخ</th>
-                <th className="text-right p-3">ملاحظات</th>
-                <th className="text-right p-3">المسؤول</th>
+                <th className="text-right p-3 font-semibold">كود الصنف</th>
+                <th className="text-right p-3 font-semibold">اسم الصنف</th>
+                <th className="text-right p-3 font-semibold">الوحدة</th>
+                <th className="text-right p-3 font-semibold">الكمية</th>
+                <th className="text-right p-3 font-semibold">سعر الوحدة</th>
+                <th className="text-right p-3 font-semibold">الإجمالي</th>
+                <th className="text-right p-3 font-semibold">رقم الإذن</th>
+                <th className="text-right p-3 font-semibold">المستودع</th>
+                <th className="text-right p-3 font-semibold">التاريخ</th>
+                <th className="text-right p-3 font-semibold">ملاحظات</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="text-center p-6">جاري التحميل...</td></tr>
+                <tr><td colSpan={10} className="text-center p-6">جاري التحميل...</td></tr>
               ) : movements.length === 0 ? (
-                <tr><td colSpan={6} className="text-center p-6 text-muted-foreground">لا يوجد مواد مصروفة لهذا الموظف</td></tr>
+                <tr><td colSpan={10} className="text-center p-6 text-muted-foreground">لا يوجد مواد مصروفة لهذا المقاول</td></tr>
               ) : movements.map((m: any) => (
                 <tr key={m.id} className="border-b last:border-0 hover:bg-muted/10">
+                  <td className="p-3 font-mono text-primary text-xs">{m.item_code || '—'}</td>
                   <td className="p-3 font-bold">{m.item_name}</td>
+                  <td className="p-3">{m.unit || '—'}</td>
                   <td className="p-3 font-bold text-red-600">{m.quantity}</td>
-                  <td className="p-3">{m.unit}</td>
+                  <td className="p-3 text-muted-foreground">
+                    {m.unit_price ? new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(m.unit_price) : '—'}
+                  </td>
+                  <td className="p-3 font-bold text-primary">
+                    {m.unit_price ? new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(Number(m.quantity || 0) * Number(m.unit_price || 0)) + ' ر.س' : '—'}
+                  </td>
+                  <td className="p-3 font-mono text-xs">{m.permission_number || '—'}</td>
+                  <td className="p-3 text-muted-foreground">{m.warehouse_name || '—'}</td>
                   <td className="p-3">{new Date(m.movement_date).toLocaleDateString('ar-SA')}</td>
                   <td className="p-3 text-muted-foreground">{m.notes || "—"}</td>
-                  <td className="p-3 text-muted-foreground">{m.issued_by || m.user_name || "—"}</td>
                 </tr>
               ))}
             </tbody>
