@@ -371,7 +371,7 @@ CREATE TABLE IF NOT EXISTS financial_monthly (
 CREATE TABLE IF NOT EXISTS inventory_permissions (
     id SERIAL PRIMARY KEY,
     permission_number VARCHAR(50) UNIQUE NOT NULL,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات', 'صرف داخلي', 'صرف خارجي')),
+    type VARCHAR(50) NOT NULL,
     direction VARCHAR(20) NOT NULL CHECK (direction IN ('add', 'dispense')),
     project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
     warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE CASCADE NOT NULL,
