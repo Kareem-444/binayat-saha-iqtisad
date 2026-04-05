@@ -2,8 +2,8 @@ import { useEffect, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, Trash2, ArrowRight, Save, Search, Package, Truck } from "lucide-react";
+import { useLocation, useNavigate, useSearchParams, useParams } from "react-router-dom";
+import { Plus, Trash2, Save, Package, Truck, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,11 +36,20 @@ const formSchema = z.object({
   driver_name: z.string().optional(),
   supply_route: z.string().optional(),
   notes: z.string().optional(),
-  target_type: z.enum(['contractor', 'warehouse']).optional(),
+  target_type: z.enum(['contractor', 'warehouse']).optional().nullable().or(z.literal('')),
   employee_id: z.coerce.number().optional().nullable(),
   target_warehouse_id: z.coerce.number().optional().nullable(),
   date: z.string().optional(),
   items: z.array(itemSchema).min(1, 'يجب إضافة صنف واحد على الأقل')
+}).superRefine((data, ctx) => {
+  if (data.direction === 'dispense') {
+    if (data.target_type === 'contractor' && (!data.employee_id || data.employee_id <= 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "المقاول مطلوب", path: ['employee_id'] });
+    }
+    if (data.target_type === 'warehouse' && (!data.target_warehouse_id || data.target_warehouse_id <= 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "المستودع الهدف مطلوب", path: ['target_warehouse_id'] });
+    }
+  }
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -48,6 +57,9 @@ type FormValues = z.infer<typeof formSchema>;
 export default function PermissionForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { id } = useParams();
+  const isEdit = !!id;
+  
   const directionParam = searchParams.get('direction') === 'dispense' ? 'dispense' : 'add';
 
   const { data: warhouses = [] } = useQuery({
@@ -60,15 +72,15 @@ export default function PermissionForm() {
     queryFn: () => projectsApi.list().then(r => r.data)
   });
 
-  const { data: inventory = [] } = useQuery({
-    queryKey: ['inventory'],
-    queryFn: () => inventoryApi.list().then(r => r.data)
-  });
-
-  // Use employees (المقاولون) instead of contractors
   const { data: employees = [] } = useQuery({
      queryKey: ['employees'],
      queryFn: () => employeesApi.list().then(r => r.data)
+  });
+
+  const { data: editData, isLoading: isLoadingEdit } = useQuery({
+    queryKey: ['permission', id],
+    queryFn: () => inventoryPermissionsApi.get(Number(id)).then(r => r.data),
+    enabled: isEdit
   });
 
   const { register, control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
@@ -79,6 +91,7 @@ export default function PermissionForm() {
       type: directionParam === 'add' ? 'إضافة مشتراه' : 'صرف داخلي',
       date: new Date().toISOString().split('T')[0],
       external: false,
+      target_type: '',
       items: [{ item_id: null, item_code: '', item_name: '', unit: '', quantity: 1, price: 0, stock_quantity: 0, stock_error: '', notes: '' }]
     }
   });
@@ -92,10 +105,51 @@ export default function PermissionForm() {
   const type = watch('type');
   const targetType = watch('target_type');
   const itemsArray = watch('items');
+  const currentWarehouseId = watch('warehouse_id');
   
+  // Auto-set warehouse for dispense mode so the DB isn't broken but the field is safely hidden
+  useEffect(() => {
+    if (direction === 'dispense' && warhouses.length > 0 && (!currentWarehouseId || currentWarehouseId === 0) && !isEdit) {
+      setValue('warehouse_id', warhouses[0].id);
+    }
+  }, [direction, warhouses, currentWarehouseId, isEdit, setValue]);
+
+  // Load Edit Data
+  useEffect(() => {
+    if (editData && isEdit) {
+      setValue('direction', editData.direction);
+      setValue('permission_number', editData.permission_number);
+      setValue('type', editData.type);
+      setValue('date', new Date(editData.date).toISOString().split('T')[0]);
+      setValue('warehouse_id', editData.warehouse_id);
+      
+      if (editData.project_id) setValue('project_id', editData.project_id);
+      if (editData.supplier_name) setValue('supplier_name', editData.supplier_name);
+      if (editData.vehicle_number) setValue('vehicle_number', editData.vehicle_number);
+      if (editData.driver_name) setValue('driver_name', editData.driver_name);
+      if (editData.notes) setValue('notes', editData.notes);
+      
+      if (editData.target_type) setValue('target_type', editData.target_type);
+      if (editData.employee_id) setValue('employee_id', editData.employee_id);
+      else if (editData.contractor_id) setValue('employee_id', editData.contractor_id);
+      
+      if (editData.target_warehouse_id) setValue('target_warehouse_id', editData.target_warehouse_id);
+
+      const mappedItems = editData.items.map((item: any) => ({
+        item_id: item.item_id,
+        item_code: item.item_code || '',
+        item_name: item.item_name || '',
+        unit: item.unit || '',
+        quantity: item.quantity,
+        price: item.price || 0,
+        notes: item.notes || ''
+      }));
+      setValue('items', mappedItems);
+    }
+  }, [editData, isEdit, setValue]);
+
   const addTypes = ['إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات'];
   const dispenseTypes = ['صرف داخلي', 'صرف خارجي'];
-  
   const currentTypes = direction === 'add' ? addTypes : dispenseTypes;
 
   const onSubmit = async (data: FormValues) => {
@@ -103,7 +157,6 @@ export default function PermissionForm() {
       if (data.type === 'صرف خارجي') data.external = true;
       else if (data.type === 'صرف داخلي') data.external = false;
 
-      // Map null values
       const payload = {
         ...data,
         project_id: isNaN(data.project_id as number) || !data.project_id ? null : Number(data.project_id),
@@ -112,29 +165,38 @@ export default function PermissionForm() {
         supplier_name: data.supplier_name || null,
         vehicle_number: data.vehicle_number || null,
         driver_name: data.driver_name || null,
+        target_type: data.target_type || null,
       };
 
-      await inventoryPermissionsApi.create(payload);
-      toast.success('تم حفظ الإذن بنجاح');
+      if (isEdit) {
+        await inventoryPermissionsApi.update(Number(id), payload);
+        toast.success('تم تعديل الإذن بنجاح');
+      } else {
+        await inventoryPermissionsApi.create(payload);
+        toast.success('تم حفظ الإذن بنجاح');
+      }
       navigate('/inventory/permissions');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'حدث خطأ أثناء الحفظ');
     }
   };
 
-  // Calculate grand total for addition permissions
   const grandTotal = useMemo(() => {
     if (direction !== 'add') return 0;
     return (itemsArray || []).reduce((sum, item) => sum + (Number(item.quantity || 0) * Number(item.price || 0)), 0);
   }, [itemsArray, direction]);
+
+  if (isEdit && isLoadingEdit) {
+     return <div className="p-20 text-center">جاري تحميل بيانات الإذن...</div>;
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Package className="h-6 w-6 text-primary" />
-            {direction === 'add' ? 'إنشاء إذن إضافة' : 'إنشاء إذن صرف'}
+            {isEdit ? <Edit3 className="h-6 w-6 text-blue-500" /> : <Package className="h-6 w-6 text-primary" />}
+            {isEdit ? 'تعديل الإذن' : (direction === 'add' ? 'إنشاء إذن إضافة' : 'إنشاء إذن صرف')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">تعبئة بيانات الإذن وأصناف المخزون</p>
         </div>
@@ -159,7 +221,7 @@ export default function PermissionForm() {
               <Label>نوع الحركة</Label>
               <select 
                 {...register('type')} 
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
                 {currentTypes.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -170,24 +232,27 @@ export default function PermissionForm() {
               <Input type="date" {...register('date')} />
             </div>
 
-            <div className="space-y-2">
-              <Label>المستودع</Label>
-              <select 
-                {...register('warehouse_id')} 
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">-- اختر المستودع --</option>
-                {warhouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
-              {errors.warehouse_id && <p className="text-xs text-red-500">{errors.warehouse_id.message}</p>}
-            </div>
+            {/* Warehouse depends on direction: Show only for Add */}
+            {direction === 'add' && (
+              <div className="space-y-2">
+                <Label>المستودع (المصدر)</Label>
+                <select 
+                  {...register('warehouse_id')} 
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                >
+                  <option value="">-- اختر المستودع --</option>
+                  {warhouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                </select>
+                {errors.warehouse_id && <p className="text-xs text-red-500">{errors.warehouse_id.message}</p>}
+              </div>
+            )}
 
             {(direction === 'dispense' || type === 'ارتجاع' || type === 'إضافة محولة') && (
               <div className="space-y-2">
                 <Label>المشروع</Label>
                 <select 
                   {...register('project_id')} 
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 >
                   <option value="">-- اختر المشروع --</option>
                   {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -198,48 +263,47 @@ export default function PermissionForm() {
             {direction === 'dispense' && (
               <>
                  <div className="space-y-2">
-                   <Label>نوع جهة الصرف</Label>
+                   <Label>نوع جهة الصرف (المستلم)</Label>
                    <select 
-                     {...register('target_type')} 
-                     onChange={(e) => {
-                         register('target_type').onChange(e);
-                         setValue('employee_id', null as any);
-                         setValue('target_warehouse_id', null as any);
-                     }}
+                     {...register('target_type', {
+                        onChange: () => {
+                           setValue('employee_id', null as any);
+                           setValue('target_warehouse_id', null as any);
+                        }
+                     })} 
                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                    >
                      <option value="">-- غير محدد --</option>
                      <option value="contractor">مقاول</option>
                      <option value="warehouse">مستودع (تحويل)</option>
                    </select>
-                   {errors.target_type && <p className="text-xs text-red-500">{errors.target_type.message}</p>}
                  </div>
 
                  {targetType === 'contractor' && (
                     <div className="space-y-2">
-                      <Label className="text-red-500">* المقاول (مطلوب)</Label>
+                      <Label className="text-red-500">* المقاول (الجهة المستلمة)</Label>
                       <select 
-                        {...register('employee_id', { required: "المقاول مطلوب" })} 
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        {...register('employee_id')} 
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background border-red-200 focus:border-red-500"
                       >
                         <option value="">-- اختر المقاول --</option>
                         {employees.map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
                       </select>
-                      {errors.employee_id && <p className="text-xs text-red-500">{errors.employee_id.message as string}</p>}
+                      {errors.employee_id && <p className="text-xs text-red-600 font-bold">{errors.employee_id.message as string}</p>}
                     </div>
                  )}
 
                  {targetType === 'warehouse' && (
                     <div className="space-y-2">
-                      <Label className="text-red-500">* المستودع الهدف (مطلوب)</Label>
+                      <Label className="text-blue-500">* المستودع الهدف (الجهة المستلمة)</Label>
                       <select 
-                        {...register('target_warehouse_id', { required: "المستودع الهدف مطلوب" })} 
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                        {...register('target_warehouse_id')} 
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background border-blue-200 focus:border-blue-500"
                       >
                         <option value="">-- اختر المستودع الهدف --</option>
                         {warhouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
                       </select>
-                      {errors.target_warehouse_id && <p className="text-xs text-red-500">{errors.target_warehouse_id.message as string}</p>}
+                      {errors.target_warehouse_id && <p className="text-xs text-red-600 font-bold">{errors.target_warehouse_id.message as string}</p>}
                     </div>
                  )}
               </>
@@ -252,7 +316,6 @@ export default function PermissionForm() {
               </div>
             )}
 
-            {/* Vehicle number and driver name for dispatch */}
             {direction === 'dispense' && (
               <>
                 <div className="space-y-2">
@@ -288,7 +351,6 @@ export default function PermissionForm() {
             {fields.map((field, index) => (
               <div key={field.id} className="p-4 border rounded-lg bg-muted/20 relative space-y-3">
                 
-                {/* === ADDITION MODE: Manual entry === */}
                 {direction === 'add' && (
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="w-32 space-y-2">
@@ -337,7 +399,6 @@ export default function PermissionForm() {
                   </div>
                 )}
 
-                {/* === DISPENSE MODE: Select from inventory === */}
                 {direction === 'dispense' && (
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="flex-1 min-w-[250px] space-y-2">
@@ -386,7 +447,6 @@ export default function PermissionForm() {
             ))}
           </div>
 
-          {/* Grand Total for Addition */}
           {direction === 'add' && itemsArray && itemsArray.length > 0 && (
             <div className="flex justify-end items-center gap-4 pt-4 border-t">
               <span className="text-base font-bold text-foreground">الإجمالي الكلي:</span>
@@ -407,7 +467,7 @@ export default function PermissionForm() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            حفظ واعتماد
+            {isEdit ? 'تحديث الإذن' : 'حفظ واعتماد'}
           </Button>
         </div>
 

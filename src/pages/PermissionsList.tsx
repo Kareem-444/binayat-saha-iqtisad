@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, FileText, ArrowUpRight, ArrowDownRight, Printer, RefreshCw } from "lucide-react";
+import { Plus, Search, FileText, ArrowUpRight, ArrowDownRight, Printer, RefreshCw, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { inventoryPermissionsApi } from "@/api/client";
@@ -149,6 +149,9 @@ export default function PermissionsList() {
                   <td className="py-3 px-4 text-foreground">{getRecipientName(item)}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => window.location.href = `/inventory/permissions/edit/${item.id}`} title="تعديل">
+                        <Edit className="h-4 w-4 text-blue-500" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => handlePrint(item.id)} title="طباعة" disabled={printingId === item.id}>
                         {printingId === item.id ? <span className="h-4 w-4 border-2 border-primary border-t-transparent flex rounded-full animate-spin" /> : <Printer className="h-4 w-4" />}
                       </Button>

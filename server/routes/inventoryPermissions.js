@@ -293,4 +293,181 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
   }
 });
 
+// PUT /api/inventory-permissions/:id
+router.put('/:id', requireRole('admin', 'manager'), validate(permissionSchema), async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { id } = req.params;
+    const {
+      permission_number, type, direction, project_id, warehouse_id,
+      supplier_name, external, vehicle_number, driver_name, supply_route, notes, items,
+      target_type, contractor_id, employee_id, target_warehouse_id
+    } = req.body;
+
+    const existingPerm = await client.query('SELECT * FROM inventory_permissions WHERE id = $1', [id]);
+    if (existingPerm.rows.length === 0) throw new Error('الإذن غير موجود');
+    const oldPermission = existingPerm.rows[0];
+
+    const effectiveEmployeeId = employee_id || null;
+    const effectiveContractorId = contractor_id || null;
+
+    if (direction === 'dispense') {
+      if (!target_type) throw new Error("نوع جهة الصرف مطلوب");
+      if (target_type === 'contractor' && !effectiveEmployeeId && !effectiveContractorId) throw new Error("المقاول مطلوب");
+      if (target_type === 'warehouse' && !target_warehouse_id) throw new Error("المستودع الهدف مطلوب");
+    }
+
+    const dupCheck = await client.query('SELECT id FROM inventory_permissions WHERE permission_number = $1 AND id != $2', [permission_number, id]);
+    if (dupCheck.rows.length > 0) throw new Error('رقم الإذن موجود بالفعل لإذن آخر');
+
+    // REVERSAL SECTION
+    const oldItems = await client.query('SELECT * FROM inventory_permission_items WHERE permission_id = $1', [id]);
+    for (const oldItem of oldItems.rows) {
+      if (oldPermission.direction === 'add') {
+        await client.query('UPDATE inventory_items SET quantity = quantity - $1 WHERE id = $2', [oldItem.quantity, oldItem.item_id]);
+      } else {
+        await client.query('UPDATE inventory_items SET quantity = quantity + $1 WHERE id = $2', [oldItem.quantity, oldItem.item_id]);
+        if (oldPermission.target_type === 'warehouse' && oldPermission.target_warehouse_id) {
+           const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [oldItem.item_name, oldPermission.target_warehouse_id]);
+           if (targetItemRes.rows.length > 0) {
+              await client.query('UPDATE inventory_items SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1', [oldItem.quantity, targetItemRes.rows[0].id]);
+           }
+        }
+      }
+    }
+    
+    await client.query(`DELETE FROM inventory_movements WHERE reference_type = 'permission' AND reference_id = $1`, [id]);
+    await client.query('DELETE FROM inventory_permission_items WHERE permission_id = $1', [id]);
+
+    // UPDATE Permission
+    const permResult = await client.query(
+      `UPDATE inventory_permissions 
+       SET permission_number=$1, type=$2, direction=$3, project_id=$4, warehouse_id=$5, supplier_name=$6, external=$7, 
+           vehicle_number=$8, driver_name=$9, supply_route=$10, notes=$11, target_type=$12, contractor_id=$13, 
+           employee_id=$14, target_warehouse_id=$15, updated_at=NOW()
+       WHERE id=$16 RETURNING *`,
+      [permission_number, type, direction, project_id, warehouse_id, supplier_name, external, vehicle_number || null, driver_name || null, supply_route, notes, target_type || null, effectiveContractorId, effectiveEmployeeId, target_warehouse_id || null, id]
+    );
+    const permission = permResult.rows[0];
+
+    const warehouseRes = await client.query('SELECT name FROM warehouses WHERE id = $1', [warehouse_id]);
+    const warehouse_name = warehouseRes.rows[0]?.name;
+    let project_name = null;
+    if (project_id) {
+       const projectRes = await client.query('SELECT name FROM projects WHERE id = $1', [project_id]);
+       project_name = projectRes.rows[0]?.name;
+    }
+
+    let dispatchLocation = '';
+    if (direction === 'dispense') {
+      if (target_type === 'contractor' && effectiveEmployeeId) {
+        const empRes = await client.query('SELECT name FROM employees WHERE id = $1', [effectiveEmployeeId]);
+        dispatchLocation = empRes.rows[0]?.name || '';
+      } else if (target_type === 'contractor' && effectiveContractorId) {
+        const conRes = await client.query('SELECT name FROM contractors WHERE id = $1', [effectiveContractorId]);
+        dispatchLocation = conRes.rows[0]?.name || '';
+      } else if (target_type === 'warehouse' && target_warehouse_id) {
+        const whRes = await client.query('SELECT name FROM warehouses WHERE id = $1', [target_warehouse_id]);
+        dispatchLocation = whRes.rows[0]?.name || '';
+      }
+    }
+
+    let total_quantity = 0;
+    let total_value = 0;
+    const insertedItems = [];
+
+    for (const item of items) {
+      let currentItemId = item.item_id;
+      let finalItemCode = item.item_code || null;
+      const finalTotalPrice = Number(item.quantity) * Number(item.price);
+      let remainingStock = 0;
+
+      if (!currentItemId) {
+        const newItemRes = await client.query(
+          `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
+           VALUES ($1, $2, 'مواد', $3, 0, 0, $4, $5, $6) RETURNING id`,
+          [finalItemCode, item.item_name, item.unit, item.price, warehouse_id, warehouse_name]
+        );
+        currentItemId = newItemRes.rows[0].id;
+      } else {
+        const existingItemRes = await client.query('SELECT item_code FROM inventory_items WHERE id = $1', [currentItemId]);
+        if (existingItemRes.rows.length > 0) finalItemCode = existingItemRes.rows[0].item_code || finalItemCode;
+      }
+
+      if (direction === 'dispense') {
+        const stockRes = await client.query('SELECT quantity FROM inventory_items WHERE id = $1', [currentItemId]);
+        const currentStock = Number(stockRes.rows[0]?.quantity || 0);
+        if (currentStock < Number(item.quantity)) throw new Error(`الكمية المتوفرة للصنف ${item.item_name} غير كافية (${currentStock})`);
+        remainingStock = currentStock - Number(item.quantity);
+      }
+
+      const permItemRes = await client.query(
+        `INSERT INTO inventory_permission_items (permission_id, item_id, item_code, item_name, quantity, unit, price, total_price, notes, remaining_stock, dispatch_location)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [permission.id, currentItemId, finalItemCode, item.item_name, item.quantity, item.unit, item.price, finalTotalPrice, item.notes || null, remainingStock, dispatchLocation]
+      );
+      insertedItems.push(permItemRes.rows[0]);
+
+      total_quantity += Number(item.quantity);
+      total_value += Number(item.quantity) * Number(item.price);
+
+      if (direction === 'add') {
+        await client.query('UPDATE inventory_items SET quantity = quantity + $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, currentItemId]);
+      } else {
+        await client.query('UPDATE inventory_items SET quantity = quantity - $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, currentItemId]);
+      }
+
+      const movementType = direction === 'add' ? 'وارد' : 'صادر';
+      await client.query(
+        `INSERT INTO inventory_movements (item_id, type, quantity, project_id, project_name, notes, reference_type, reference_id, contractor_id, target_warehouse_id, employee_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'permission', $7, $8, $9, $10)`,
+        [currentItemId, movementType, item.quantity, project_id, project_name, `إذن معدّل ${permission_number}`, permission.id, effectiveContractorId, target_warehouse_id || null, effectiveEmployeeId]
+      );
+
+      if (direction === 'dispense' && target_type === 'warehouse' && target_warehouse_id) {
+         let targetItemId;
+         const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [item.item_name, target_warehouse_id]);
+         const targetWHR = await client.query('SELECT name FROM warehouses WHERE id = $1', [target_warehouse_id]);
+         const target_warehouse_name = targetWHR.rows[0]?.name;
+
+         if (targetItemRes.rows.length > 0) {
+            targetItemId = targetItemRes.rows[0].id;
+            await client.query('UPDATE inventory_items SET quantity = quantity + $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, targetItemId]);
+         } else {
+            const newItemTarget = await client.query(
+               `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
+                VALUES ($1, $2, 'مواد', $3, $4, 0, $5, $6, $7) RETURNING id`,
+               [finalItemCode, item.item_name, item.unit, item.quantity, item.price, target_warehouse_id, target_warehouse_name]
+            );
+            targetItemId = newItemTarget.rows[0].id;
+         }
+
+         await client.query(
+            `INSERT INTO inventory_movements (item_id, type, quantity, notes, reference_type, reference_id, source_location)
+             VALUES ($1, 'وارد', $2, $3, 'permission', $4, $5)`,
+            [targetItemId, item.quantity, `تعديل تحويل من مستودع ${warehouse_name} (إذن ${permission_number})`, permission.id, warehouse_name]
+         );
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json({
+      ...permission,
+      total_quantity,
+      total_value,
+      items: insertedItems
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err.message.includes('رقم الإذن') || err.message.includes('غير كافية') || err.message.includes('مطلب') || err.message.includes('لا يمكن')) {
+       return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
 export default router;

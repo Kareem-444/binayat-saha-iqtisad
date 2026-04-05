@@ -50,6 +50,7 @@ const App = () => (
                       <Route path="/inventory" element={<Inventory />} />
                       <Route path="/inventory/permissions" element={<PermissionsList />} />
                       <Route path="/inventory/permissions/new" element={<PermissionForm />} />
+                      <Route path="/inventory/permissions/edit/:id" element={<PermissionForm />} />
                       <Route path="/warehouses" element={<Warehouses />} />
                       <Route path="/procurement" element={<Procurement />} />
 
