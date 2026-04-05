@@ -249,15 +249,37 @@ export default function PermissionsList() {
                 </tbody>
               </table>
 
-              {/* Signatures */}
-              <div className="mt-16 flex justify-between px-10 pb-12">
-                <div className="text-center">
-                  <p className="font-bold mb-10">أمين المستودع</p>
-                  <p>.......................</p>
+              {/* Committee Decision & Signatures */}
+              <div className="mt-8 px-2 text-right space-y-8">
+                <div>
+                  <p className="font-bold mb-2 text-lg">قرار لجنة الفحص (مطابق/ غيرمطابق)</p>
+                  <p className="text-gray-500 mb-4 whitespace-pre-wrap tracking-[0.2em]">........................................................................................................................</p>
+                  <p className="text-gray-500 whitespace-pre-wrap tracking-[0.2em]">........................................................................................................................</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-bold mb-10">المدير / المشرف</p>
-                  <p>.......................</p>
+
+                <div className="flex justify-around items-end pt-4">
+                  <div className="text-center">
+                    <p className="font-bold mb-8 text-lg">عضو لجنة الفحص</p>
+                    <p className="text-gray-500 tracking-[0.1em]">.......................................</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold mb-8 text-lg">محاسب الموقع</p>
+                    <p className="text-gray-500 tracking-[0.1em]">.......................................</p>
+                  </div>
+                </div>
+
+                <div className="pt-8">
+                  <p className="font-bold mb-6 text-lg">استلمت الأصناف عاليه وأصبحت عهدتي</p>
+                  <div className="flex justify-around items-end">
+                    <div className="text-center">
+                      <p className="font-bold mb-8 text-lg">امين المخزن:</p>
+                      <p className="text-gray-500 tracking-[0.1em]">.......................................</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold mb-8 text-lg">مدير المشروع:</p>
+                      <p className="text-gray-500 tracking-[0.1em]">.......................................</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
