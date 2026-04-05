@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     reference_type VARCHAR(50), 
     reference_id INTEGER,
     contractor_id INTEGER REFERENCES contractors(id) ON DELETE SET NULL,
+    employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,
     target_warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -383,6 +384,8 @@ CREATE TABLE IF NOT EXISTS inventory_permissions (
     month INTEGER,
     target_type VARCHAR(20) CHECK (target_type IN ('contractor', 'warehouse')),
     contractor_id INTEGER REFERENCES contractors(id) ON DELETE SET NULL,
+    employee_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,
+    driver_name VARCHAR(150),
     target_warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE SET NULL,
     created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -399,6 +402,9 @@ CREATE TABLE IF NOT EXISTS inventory_permission_items (
     unit VARCHAR(30) NOT NULL,
     price NUMERIC(12,2) DEFAULT 0,
     item_code VARCHAR(100),
-    total_price NUMERIC(12,2)
+    total_price NUMERIC(12,2),
+    notes TEXT,
+    remaining_stock NUMERIC(12,2),
+    dispatch_location VARCHAR(200)
 );
 
