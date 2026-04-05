@@ -36,8 +36,8 @@ export default function Employees() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {[
-          { label: "إجمالي الموظفين", value: employees.length },
-          { label: "موظفون نشطون", value: employees.filter((e: any) => e.status === "نشط").length },
+          { label: "إجمالي المقاولين", value: employees.length },
+          { label: "مقاولون نشطون", value: employees.filter((e: any) => e.status === "نشط").length },
           { label: "في إجازة", value: employees.filter((e: any) => e.status === "إجازة").length },
         ].map((s) => (
           <div key={s.label} className="stat-card">
@@ -51,10 +51,10 @@ export default function Employees() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="بحث في الموظفين..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" />
+          <Input placeholder="بحث في المقاولين..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" />
         </div>
         <Button className="gap-2 flex-shrink-0" onClick={openAdd}>
-          <Plus className="h-4 w-4" /> موظف جديد
+          <Plus className="h-4 w-4" /> مقاول جديد
         </Button>
       </div>
 
@@ -90,7 +90,7 @@ export default function Employees() {
               {/* Actions */}
               <div className="flex gap-2 mt-3 pt-3 border-t border-border">
                 <Button size="sm" variant="outline" className="flex-1 h-7 text-xs gap-1" onClick={() => setMovementsEmployee(emp)}>
-                  <Eye className="h-3 w-3" /> المواد المصروفة
+                  <Eye className="h-3 w-3" /> المواد المصروفة للمقاول
                 </Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openEdit(emp)}>
                   <Edit className="h-3 w-3" /> تعديل
@@ -109,7 +109,7 @@ export default function Employees() {
       <DeleteConfirmDialog
         open={!!deleteItem}
         onOpenChange={(open) => !open && setDeleteItem(null)}
-        title="حذف الموظف"
+        title="حذف المقاول"
         description={`هل تريد حذف "${deleteItem?.name}"؟`}
         deleteFn={() => employeesApi.delete(deleteItem?.id)}
         queryKey={["employees"]}
@@ -132,7 +132,7 @@ function EmployeeMovementsDialog({ employee, onClose }: { employee: any; onClose
     <Dialog open={!!employee} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-xl">المواد المصروفة للموظف: {employee.name}</DialogTitle>
+          <DialogTitle className="text-xl">المواد المصروفة للمقاول: {employee.name}</DialogTitle>
         </DialogHeader>
         <div className="border rounded-lg overflow-x-auto">
           <table className="w-full text-sm">

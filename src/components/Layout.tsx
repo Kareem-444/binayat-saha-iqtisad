@@ -9,7 +9,7 @@ const pageTitles: Record<string, string> = {
   "/inventory": "إدارة المخزون",
   "/warehouses": "المستودعات",
   "/procurement": "المشتريات والموردين",
-  "/employees": "الموظفين",
+  "/employees": "المقاولين",
   "/equipment": "المعدات والآليات",
   "/documents": "المستندات والملفات",
   "/settings": "الإعدادات",

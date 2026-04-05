@@ -38,7 +38,7 @@ export default function ContractorDialog({ open, onOpenChange, editItem }: Contr
     mutationFn: (data: any) => editItem ? employeesApi.update(editItem.id, data) : employeesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
-      toast({ title: editItem ? "تم تحديث الموظف بنجاح" : "تم إضافة الموظف بنجاح" });
+      toast({ title: editItem ? "تم تحديث المقاول بنجاح" : "تم إضافة المقاول بنجاح" });
       onOpenChange(false);
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
@@ -58,12 +58,12 @@ export default function ContractorDialog({ open, onOpenChange, editItem }: Contr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle>{editItem ? "تعديل موظف" : "إضافة موظف جديد"}</DialogTitle>
+          <DialogTitle>{editItem ? "تعديل بيانات المقاول" : "إضافة مقاول جديد"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>الاسم بالكامل *</Label>
+              <Label>اسم المقاول *</Label>
               <Input required value={form.name} onChange={e => update("name", e.target.value)} />
             </div>
             <div className="space-y-2">

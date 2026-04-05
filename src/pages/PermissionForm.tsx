@@ -10,14 +10,17 @@ import { Label } from "@/components/ui/label";
 import { inventoryPermissionsApi, inventoryApi, projectsApi, warehousesApi, contractorsApi } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import ItemSelector from "@/components/dialogs/ItemSelector";
 
 const itemSchema = z.object({
-  item_id: z.coerce.number().optional(),
+  item_id: z.coerce.number().optional().nullable(),
   item_code: z.string().optional(),
   item_name: z.string().min(1, 'اسم الصنف مطلوب'),
   unit: z.string().min(1, 'الوحدة مطلوبة'),
   quantity: z.coerce.number().min(0.01, 'الكمية مطلوبة'),
   price: z.coerce.number().optional().default(0),
+  stock_quantity: z.coerce.number().optional().default(0),
+  stock_error: z.string().optional(),
 });
 
 const formSchema = z.object({
@@ -73,7 +76,7 @@ export default function PermissionForm() {
       type: directionParam === 'add' ? 'إضافة مشتراه' : 'صرف داخلي',
       date: new Date().toISOString().split('T')[0],
       external: false,
-      items: [{ item_code: '', item_name: '', unit: '', quantity: 1, price: 0 }]
+      items: [{ item_id: null, item_code: '', item_name: '', unit: '', quantity: 1, price: 0, stock_quantity: 0, stock_error: '' }]
     }
   });
 
@@ -249,7 +252,7 @@ export default function PermissionForm() {
         <div className="p-6 bg-card border border-border rounded-xl shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b pb-2">
             <h2 className="text-lg font-bold">الأصناف</h2>
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ item_code: '', item_name: '', unit: '', quantity: 1, price: 0 })} className="gap-1">
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ item_id: null, item_code: '', item_name: '', unit: '', quantity: 1, price: 0, stock_quantity: 0, stock_error: '' })} className="gap-1">
               <Plus className="h-4 w-4" /> إضافة صنف
             </Button>
           </div>
@@ -259,36 +262,30 @@ export default function PermissionForm() {
           <div className="space-y-4">
             {fields.map((field, index) => (
               <div key={field.id} className="flex flex-wrap items-end gap-3 p-4 border rounded-lg bg-muted/20 relative">
-                
-                <div className="w-24 space-y-2">
-                  <Label>كود الصنف</Label>
-                  <Input {...register(`items.${index}.item_code` as const)} placeholder="اختياري..." />
-                </div>
 
-                <div className="flex-1 min-w-[200px] space-y-2 relative group">
-                  <Label>اسم الصنف</Label>
-                  <Input 
-                    {...register(`items.${index}.item_name` as const)} 
-                    placeholder="ابحث أو اكتب اسم جديد..." 
-                    onChange={(e) => {
-                       register(`items.${index}.item_name` as const).onChange(e);
-                       const val = e.target.value;
-                       const found = inventory.find((i: any) => i.name === val);
-                       if (found) {
-                          setValue(`items.${index}.item_code` as any, found.item_code || '');
-                          setValue(`items.${index}.unit` as any, found.unit || '');
-                          if (direction === 'add') setValue(`items.${index}.price` as any, found.unit_price || 0);
-                       }
+                <div className="flex-1 min-w-[250px] space-y-2">
+                  <Label>الصنف</Label>
+                  <ItemSelector
+                    value={itemsArray[index]?.item_id || null}
+                    onChange={(itemId, item) => {
+                      if (item) {
+                        setValue(`items.${index}.item_id` as any, itemId);
+                        setValue(`items.${index}.item_code` as any, item.item_code || '');
+                        setValue(`items.${index}.item_name` as any, item.name || '');
+                        setValue(`items.${index}.unit` as any, item.unit || '');
+                        setValue(`items.${index}.stock_quantity` as any, Number(item.quantity || 0));
+                        if (direction === 'add') {
+                          setValue(`items.${index}.price` as any, item.unit_price || 0);
+                        }
+                      }
                     }}
-                    list={`inventory-items-${index}`}
+                    showStockValidation={direction === 'dispense'}
+                    movementType="صادر"
                   />
-                  <datalist id={`inventory-items-${index}`}>
-                     {inventory.map((i: any) => <option key={i.id} value={i.name} />)}
-                  </datalist>
                   {errors.items?.[index]?.item_name && <p className="text-[10px] text-red-500">{errors.items[index]?.item_name?.message}</p>}
                 </div>
 
-                <div className="w-24 space-y-2">
+                <div className="w-28 space-y-2">
                   <Label>الوحدة</Label>
                   <Input {...register(`items.${index}.unit` as const)} placeholder="حبة، طن..." />
                   {errors.items?.[index]?.unit && <p className="text-[10px] text-red-500">{errors.items[index]?.unit?.message}</p>}

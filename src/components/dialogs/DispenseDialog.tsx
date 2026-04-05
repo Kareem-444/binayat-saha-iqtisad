@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
 
   const [form, setForm] = useState({
     quantity: 0,
-    recipient_type: "" as "" | "employee" | "warehouse" | "other",
+    recipient_type: "" as "" | "employee" | "contractor" | "warehouse" | "other",
     employee_id: null as number | null,
     destination_warehouse_id: null as number | null,
     project_name: "",
@@ -28,6 +29,8 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
     movement_date: new Date().toISOString().split("T")[0],
     notes: "",
   });
+
+  const [quantityError, setQuantityError] = useState("");
 
   const { data: employees = [] } = useQuery({
     queryKey: ["employees"],
@@ -57,21 +60,27 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
     onError: (err: any) => toast({ title: err.response?.data?.error || "حدث خطأ أثناء الصرف", variant: "destructive" }),
   });
 
-  const resetForm = () => setForm({
-    quantity: 0, recipient_type: "", employee_id: null, destination_warehouse_id: null,
-    project_name: "", contractor_name: "", movement_date: new Date().toISOString().split("T")[0], notes: "",
-  });
+  const resetForm = () => {
+    setForm({
+      quantity: 0, recipient_type: "", employee_id: null, destination_warehouse_id: null,
+      project_name: "", contractor_name: "", movement_date: new Date().toISOString().split("T")[0], notes: "",
+    });
+    setQuantityError("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (form.quantity <= 0) {
+      setQuantityError("الكمية يجب أن تكون أكبر من صفر");
       toast({ title: "الكمية يجب أن تكون أكبر من صفر", variant: "destructive" });
       return;
     }
     if (form.quantity > Number(item?.quantity || 0)) {
+      setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-SA")} ${item?.unit})`);
       toast({ title: "الكمية المطلوبة أكبر من المتوفر في المخزون", variant: "destructive" });
       return;
     }
+    setQuantityError("");
 
     const payload: any = {
       quantity: form.quantity,
@@ -94,7 +103,18 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
     mutation.mutate(payload);
   };
 
-  const update = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
+  const update = (key: string, value: any) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+    if (key === "quantity") {
+      if (Number(value) <= 0) {
+        setQuantityError("الكمية يجب أن تكون أكبر من صفر");
+      } else if (Number(value) > Number(item?.quantity || 0)) {
+        setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-SA")} ${item?.unit})`);
+      } else {
+        setQuantityError("");
+      }
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,15 +122,44 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
         <DialogHeader>
           <DialogTitle>صرف مواد: {item?.name}</DialogTitle>
         </DialogHeader>
-        <div className="rounded-lg bg-muted/50 p-3 mb-2 flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">الرصيد المتاح:</span>
-          <span className="font-bold text-primary">{Number(item?.quantity || 0).toLocaleString("ar-SA")} {item?.unit}</span>
+        
+        {/* Item Summary Card */}
+        <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">{item?.name}</p>
+              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                <span>الفئة: {item?.category || "—"}</span>
+                <span>الوحدة: {item?.unit || "وحدة"}</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">الرصيد المتاح</p>
+              <p className="text-xl font-black text-primary">{Number(item?.quantity || 0).toLocaleString("ar-SA")} {item?.unit}</p>
+            </div>
+          </div>
         </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>الكمية المصروفة *</Label>
-              <Input type="number" step="0.01" min={0.01} max={item ? Number(item.quantity) : 1000000} required value={form.quantity || ""} onChange={e => update("quantity", Number(e.target.value))} />
+              <Input 
+                type="number" 
+                step="0.01" 
+                min={0.01} 
+                max={item ? Number(item.quantity) : 1000000} 
+                required 
+                value={form.quantity || ""} 
+                onChange={e => update("quantity", Number(e.target.value))}
+                className={quantityError ? "border-red-500" : ""}
+              />
+              {quantityError && (
+                <div className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                  <AlertCircle className="h-3 w-3" />
+                  <span>{quantityError}</span>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>تاريخ الصرف *</Label>
@@ -133,6 +182,7 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
             >
               <option value="">— اختر نوع المستلم —</option>
               <option value="employee">صرف على موظف</option>
+              <option value="contractor">صرف على مقاول</option>
               <option value="warehouse">نقل إلى مستودع</option>
               <option value="other">مستلم آخر</option>
             </select>
@@ -149,6 +199,22 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
                 required
               >
                 <option value="">— اختر الموظف —</option>
+                {employees.map((emp: any) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Contractor dropdown */}
+          {form.recipient_type === "contractor" && (
+            <div className="space-y-2">
+              <Label>المقاول *</Label>
+              <select
+                value={form.employee_id || ""}
+                onChange={e => update("employee_id", Number(e.target.value) || null)}
+                className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                required
+              >
+                <option value="">— اختر المقاول —</option>
                 {employees.map((emp: any) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
               </select>
             </div>

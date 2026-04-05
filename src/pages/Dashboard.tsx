@@ -106,9 +106,9 @@ export default function Dashboard() {
           trend={{ value: "+8.2% هذا الشهر", up: true }}
         />
         <StatCard
-          title="إجمالي الموظفين"
+          title="إجمالي المقاولين"
           value={`${employees.length}`}
-          subtitle={`${employees.filter((e: any) => e.status === "نشط").length} موظف نشط`}
+          subtitle={`${employees.filter((e: any) => e.status === "نشط").length} مقاول نشط`}
           icon={Users}
           color="bg-green-100 text-green-700"
         />
