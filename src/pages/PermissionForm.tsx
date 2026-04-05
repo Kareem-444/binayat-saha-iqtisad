@@ -28,7 +28,7 @@ const formSchema = z.object({
   permission_number: z.string().min(1, 'الرقم مطلوب'),
   type: z.string().min(1, 'النوع مطلوب'),
   direction: z.enum(['add', 'dispense']),
-  warehouse_id: z.coerce.number({ required_error: 'المستودع مطلوب' }),
+  warehouse_id: z.coerce.number({ required_error: 'المستودع مطلوب' }).min(1, 'المستودع مطلوب'),
   project_id: z.coerce.number().optional(),
   supplier_name: z.string().optional(),
   external: z.boolean().default(false),

@@ -21,7 +21,7 @@ const permissionSchema = z.object({
   type: z.enum(['إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات', 'صرف داخلي', 'صرف خارجي']),
   direction: z.enum(['add', 'dispense']),
   project_id: z.number().optional().nullable(),
-  warehouse_id: z.number({ required_error: 'المستودع مطلوب' }),
+  warehouse_id: z.number({ required_error: 'المستودع مطلوب' }).min(1, 'المستودع مطلوب'),
   supplier_name: z.string().optional().nullable(),
   external: z.boolean().default(false),
   vehicle_number: z.string().optional().nullable(),
