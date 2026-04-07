@@ -42,7 +42,7 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500 shadow-2xl mb-4">
-            <img src="/public/W" alt="Watford" className="h-10 w-10 object-contain" />
+            <img src="/Watford_FC.svg.png" alt="Watford" className="h-10 w-10 object-contain" />
           </div>
           <h1 className="text-2xl font-black text-white">Watford</h1>
           <p className="text-white/50 text-sm mt-1">نظام إدارة المقاولات</p>
@@ -117,7 +117,7 @@ export default function Login() {
 
           <div className="mt-6 pt-5 border-t border-white/10">
             <p className="text-center text-white/30 text-xs">
-              الحساب الافتراضي: admin@construction.sa / Admin123!
+             
             </p>
           </div>
         </div>

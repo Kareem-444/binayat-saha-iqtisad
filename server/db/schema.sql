@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
 -- =============================================
 -- 2. PROJECTS
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 
 -- =============================================
 -- 3. WAREHOUSES
@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_inventory_category ON inventory_items(category);
-CREATE INDEX idx_inventory_warehouse ON inventory_items(warehouse_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items(category);
+CREATE INDEX IF NOT EXISTS idx_inventory_warehouse ON inventory_items(warehouse_id);
 
 -- =============================================
 -- 4b. INVENTORY MOVEMENTS
@@ -104,9 +104,9 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     target_warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_movements_item ON inventory_movements(item_id);
-CREATE INDEX idx_movements_date ON inventory_movements(movement_date);
-CREATE INDEX idx_movements_ref ON inventory_movements(reference_type, reference_id);
+CREATE INDEX IF NOT EXISTS idx_movements_item ON inventory_movements(item_id);
+CREATE INDEX IF NOT EXISTS idx_movements_date ON inventory_movements(movement_date);
+CREATE INDEX IF NOT EXISTS idx_movements_ref ON inventory_movements(reference_type, reference_id);
 
 -- =============================================
 -- 5. SUPPLIERS
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_suppliers_category ON suppliers(category);
+CREATE INDEX IF NOT EXISTS idx_suppliers_category ON suppliers(category);
 
 -- =============================================
 -- 5b. CONTRACTORS
@@ -160,8 +160,8 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_po_status ON purchase_orders(status);
-CREATE INDEX idx_po_supplier ON purchase_orders(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_po_status ON purchase_orders(status);
+CREATE INDEX IF NOT EXISTS idx_po_supplier ON purchase_orders(supplier_id);
 
 -- =============================================
 -- 7. PURCHASE ORDER ITEMS
@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
     unit_price NUMERIC(12,2) NOT NULL,
     total NUMERIC(15,2) GENERATED ALWAYS AS (quantity * unit_price) STORED
 );
-CREATE INDEX idx_poi_po ON purchase_order_items(purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_poi_po ON purchase_order_items(purchase_order_id);
 
 -- =============================================
 -- 8. EMPLOYEES
@@ -196,9 +196,9 @@ CREATE TABLE IF NOT EXISTS employees (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_employees_status ON employees(status);
-CREATE INDEX idx_employees_project ON employees(project_id);
-CREATE INDEX idx_employees_department ON employees(department);
+CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status);
+CREATE INDEX IF NOT EXISTS idx_employees_project ON employees(project_id);
+CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department);
 
 -- =============================================
 -- 9. ATTENDANCE
@@ -214,9 +214,9 @@ CREATE TABLE IF NOT EXISTS attendance (
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_attendance_employee ON attendance(employee_id);
-CREATE INDEX idx_attendance_date ON attendance(date);
-CREATE UNIQUE INDEX idx_attendance_unique ON attendance(employee_id, date);
+CREATE INDEX IF NOT EXISTS idx_attendance_employee ON attendance(employee_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_unique ON attendance(employee_id, date);
 
 -- =============================================
 -- 10. EQUIPMENT
@@ -237,8 +237,8 @@ CREATE TABLE IF NOT EXISTS equipment (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_equipment_status ON equipment(status);
-CREATE INDEX idx_equipment_project ON equipment(project_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_status ON equipment(status);
+CREATE INDEX IF NOT EXISTS idx_equipment_project ON equipment(project_id);
 
 -- =============================================
 -- 11. MAINTENANCE RECORDS
@@ -255,8 +255,8 @@ CREATE TABLE IF NOT EXISTS maintenance_records (
     status VARCHAR(20) DEFAULT 'مكتمل' CHECK (status IN ('مجدول','قيد التنفيذ','مكتمل')),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_maintenance_equipment ON maintenance_records(equipment_id);
-CREATE INDEX idx_maintenance_date ON maintenance_records(maintenance_date);
+CREATE INDEX IF NOT EXISTS idx_maintenance_equipment ON maintenance_records(equipment_id);
+CREATE INDEX IF NOT EXISTS idx_maintenance_date ON maintenance_records(maintenance_date);
 
 -- =============================================
 -- 12. EXPENSES
@@ -275,9 +275,9 @@ CREATE TABLE IF NOT EXISTS expenses (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_expenses_project ON expenses(project_id);
-CREATE INDEX idx_expenses_date ON expenses(expense_date);
-CREATE INDEX idx_expenses_category ON expenses(category);
+CREATE INDEX IF NOT EXISTS idx_expenses_project ON expenses(project_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
+CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
 
 -- =============================================
 -- 13. INVOICES
@@ -297,9 +297,9 @@ CREATE TABLE IF NOT EXISTS invoices (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_invoices_status ON invoices(status);
-CREATE INDEX idx_invoices_project ON invoices(project_id);
-CREATE INDEX idx_invoices_due_date ON invoices(due_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_project ON invoices(project_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
 
 -- =============================================
 -- 14. DOCUMENTS
@@ -318,8 +318,8 @@ CREATE TABLE IF NOT EXISTS documents (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_documents_project ON documents(project_id);
-CREATE INDEX idx_documents_category ON documents(category);
+CREATE INDEX IF NOT EXISTS idx_documents_project ON documents(project_id);
+CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);
 
 -- =============================================
 -- 15. NOTIFICATIONS
@@ -333,8 +333,8 @@ CREATE TABLE IF NOT EXISTS notifications (
     is_read BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
 
 -- =============================================
 -- 16. ACTIVITY LOG
@@ -349,8 +349,8 @@ CREATE TABLE IF NOT EXISTS activity_log (
     icon VARCHAR(30) DEFAULT 'activity',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_activity_user ON activity_log(user_id);
-CREATE INDEX idx_activity_created ON activity_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log(created_at DESC);
 
 -- =============================================
 -- 17. FINANCIAL SUMMARY (monthly cache)
@@ -391,7 +391,7 @@ CREATE TABLE IF NOT EXISTS inventory_permissions (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_inv_perm_dir ON inventory_permissions(direction);
+CREATE INDEX IF NOT EXISTS idx_inv_perm_dir ON inventory_permissions(direction);
 
 CREATE TABLE IF NOT EXISTS inventory_permission_items (
     id SERIAL PRIMARY KEY,
