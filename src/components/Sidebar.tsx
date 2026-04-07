@@ -58,11 +58,11 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent shadow-lg flex-shrink-0">
-          <Building2 className="h-6 w-6 text-accent-foreground" />
+          <img src="/Watford_FC.svg" alt="Watford" className="h-6 w-6 object-contain" />
         </div>
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-bold text-sidebar-foreground truncate">البناء الذهبي</h1>
+            <h1 className="text-sm font-bold text-sidebar-foreground truncate">Watford</h1>
             <p className="text-xs text-sidebar-foreground/50">نظام إدارة المقاولات</p>
           </div>
         )}

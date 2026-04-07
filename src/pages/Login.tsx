@@ -42,9 +42,9 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500 shadow-2xl mb-4">
-            <Building2 className="h-9 w-9 text-white" />
+            <img src="/public/W" alt="Watford" className="h-10 w-10 object-contain" />
           </div>
-          <h1 className="text-2xl font-black text-white">البناء الذهبي</h1>
+          <h1 className="text-2xl font-black text-white">Watford</h1>
           <p className="text-white/50 text-sm mt-1">نظام إدارة المقاولات</p>
         </div>
 
@@ -123,7 +123,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-white/20 text-xs mt-6">
-          © 2024 البناء الذهبي — نظام إدارة المقاولات
+          © 2024 Watford — نظام إدارة المقاولات
         </p>
       </div>
     </div>
