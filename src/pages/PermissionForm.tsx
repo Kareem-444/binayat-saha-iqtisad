@@ -384,7 +384,7 @@ export default function PermissionForm() {
                     <div className="w-28 space-y-2">
                        <Label className="text-primary font-bold">الإجمالي</Label>
                        <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-bold text-primary">
-                         {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))} 
+                         {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))} 
                        </div>
                     </div>
 
@@ -451,7 +451,7 @@ export default function PermissionForm() {
             <div className="flex justify-end items-center gap-4 pt-4 border-t">
               <span className="text-base font-bold text-foreground">الإجمالي الكلي:</span>
               <span className="text-xl font-black text-primary bg-primary/5 border border-primary/20 rounded-lg px-6 py-2">
-                {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(grandTotal)} ر.س
+                {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(grandTotal)} ج.م
               </span>
             </div>
           )}

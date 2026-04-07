@@ -17,7 +17,7 @@ const orderStatusColors: Record<string, string> = {
 };
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(v) + " ر.س";
+  new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 0 }).format(v) + " ج.م";
 
 export default function Procurement() {
   const [search, setSearch] = useState("");

@@ -71,7 +71,7 @@ export default function AddItemMovementDialog({ open, onOpenChange, item }: AddI
       return;
     }
     if (form.type === "صادر" && form.quantity > Number(item?.quantity || 0)) {
-      setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-SA")} ${item?.unit})`);
+      setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-EG")} ${item?.unit})`);
       toast({ title: "الكمية المطلوبة أكبر من المتوفر في المخزون", variant: "destructive" });
       return;
     }
@@ -85,7 +85,7 @@ export default function AddItemMovementDialog({ open, onOpenChange, item }: AddI
       if (Number(value) <= 0) {
         setQuantityError("الكمية يجب أن تكون أكبر من صفر");
       } else if (form.type === "صادر" && Number(value) > Number(item?.quantity || 0)) {
-        setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-SA")} ${item?.unit})`);
+        setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-EG")} ${item?.unit})`);
       } else {
         setQuantityError("");
       }
@@ -112,7 +112,7 @@ export default function AddItemMovementDialog({ open, onOpenChange, item }: AddI
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
-              <p className="text-xl font-black text-primary">{Number(item?.quantity || 0).toLocaleString("ar-SA")} {item?.unit}</p>
+              <p className="text-xl font-black text-primary">{Number(item?.quantity || 0).toLocaleString("ar-EG")} {item?.unit}</p>
             </div>
           </div>
         </div>

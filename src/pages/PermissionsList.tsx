@@ -137,7 +137,7 @@ export default function PermissionsList() {
               ) : filteredPermissions.map((item: any) => (
                 <tr key={item.id} className="border-b border-border/50 hover:bg-muted/10 last:border-0">
                   <td className="py-3 px-4">
-                    <span className="text-xs font-medium text-foreground">{new Date(item.date).toLocaleDateString("ar-SA")}</span>
+                    <span className="text-xs font-medium text-foreground">{new Date(item.date).toLocaleDateString("ar-EG")}</span>
                   </td>
                   <td className="py-3 px-4 font-mono font-bold text-primary">{item.permission_number}</td>
                   <td className="py-3 px-4">
@@ -186,7 +186,7 @@ export default function PermissionsList() {
                   {printData.supplier_name && <p><strong>المورد / الشاحن:</strong> {printData.supplier_name}</p>}
                 </div>
                 <div className="space-y-2">
-                  <p><strong>التاريخ:</strong> {new Date(printData.date).toLocaleDateString("ar-SA")}</p>
+                  <p><strong>التاريخ:</strong> {new Date(printData.date).toLocaleDateString("ar-EG")}</p>
                   {printData.project_name && <p><strong>المشروع:</strong> {printData.project_name}</p>}
                   {printData.notes && <p><strong>ملاحظات:</strong> {printData.notes}</p>}
                 </div>
@@ -215,10 +215,10 @@ export default function PermissionsList() {
                       <td className="border border-gray-400 p-2">{item.unit}</td>
                       <td className="border border-gray-400 p-2 text-center font-bold">{item.quantity}</td>
                       <td className="border border-gray-400 p-2 text-center">
-                        {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(item.price || 0)}
+                        {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(item.price || 0)}
                       </td>
                       <td className="border border-gray-400 p-2 text-center font-bold bg-gray-50">
-                        {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(item.total_price || 0)}
+                        {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(item.total_price || 0)}
                       </td>
                       <td className="border border-gray-400 p-2 text-gray-600">{item.notes || '—'}</td>
                     </tr>
@@ -240,9 +240,9 @@ export default function PermissionsList() {
                   <tr className="bg-gray-200 font-bold">
                     <td colSpan={6} className="border border-gray-400 p-3 text-left text-base">الإجمالي الكلي</td>
                     <td className="border border-gray-400 p-3 text-center text-lg">
-                      {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(
+                      {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(
                         printData.items?.reduce((sum: number, item: any) => sum + Number(item.total_price || 0), 0)
-                      )} ر.س
+                      )} ج.م
                     </td>
                     <td className="border border-gray-400 p-3">&nbsp;</td>
                   </tr>
@@ -301,7 +301,7 @@ export default function PermissionsList() {
 
               {/* Date */}
               <div className="text-left mb-4">
-                <p className="text-sm">التاريخ: {new Date(printData.date).toLocaleDateString("ar-SA")}</p>
+                <p className="text-sm">التاريخ: {new Date(printData.date).toLocaleDateString("ar-EG")}</p>
               </div>
 
               {/* Meta Fields - Matches Word Template */}
@@ -344,10 +344,10 @@ export default function PermissionsList() {
                       <td className="border border-gray-400 p-2">{item.unit}</td>
                       <td className="border border-gray-400 p-2 text-center font-bold">{item.quantity}</td>
                       <td className="border border-gray-400 p-2 text-center font-bold text-blue-700">
-                        {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(item.remaining_stock || 0)}
+                        {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(item.remaining_stock || 0)}
                       </td>
                       <td className="border border-gray-400 p-2 text-center">
-                        {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(item.price || 0)}
+                        {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(item.price || 0)}
                       </td>
                       <td className="border border-gray-400 p-2 text-gray-600">
                         {item.dispatch_location || printData.employee_name || printData.contractor_name || printData.target_warehouse_name || '—'}

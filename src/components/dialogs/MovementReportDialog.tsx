@@ -26,7 +26,7 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
         <td>${i + 1}</td>
         <td>${m.movement_date || "–"}</td>
         <td style="color:${m.type === "وارد" ? "#16a34a" : "#dc2626"};font-weight:bold">${m.type}</td>
-        <td>${Number(m.quantity).toLocaleString("ar-SA")} ${m.unit || ""}</td>
+        <td>${Number(m.quantity).toLocaleString("ar-EG")} ${m.unit || ""}</td>
         <td>${m.type === 'صادر' && m.target_warehouse_name ? m.target_warehouse_name + " (تحويل)" : (m.contractor_name ? m.contractor_name + " (مقاول)" : (m.source_location || "–"))}</td>
         <td>${m.issued_by || "–"}</td>
         <td>${m.project_name || "–"}</td>
@@ -72,18 +72,18 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
 <body>
   <div class="header">
     <h1>تقرير حركة المخزون</h1>
-    <p>تاريخ التقرير: ${new Date().toLocaleDateString("ar-SA")}</p>
+    <p>تاريخ التقرير: ${new Date().toLocaleDateString("ar-EG")}</p>
   </div>
   <div class="info-grid">
     <div class="info-box"><label>كود الصنف</label><span>${item?.item_code || "–"}</span></div>
     <div class="info-box"><label>اسم الصنف</label><span>${item?.name}</span></div>
     <div class="info-box"><label>الفئة</label><span>${item?.category}</span></div>
-    <div class="info-box"><label>الرصيد الحالي</label><span>${Number(item?.quantity).toLocaleString("ar-SA")} ${item?.unit}</span></div>
+    <div class="info-box"><label>الرصيد الحالي</label><span>${Number(item?.quantity).toLocaleString("ar-EG")} ${item?.unit}</span></div>
   </div>
   <div class="summary">
-    <div class="summary-box in"><span>${totalIn.toLocaleString("ar-SA")}</span><label>إجمالي الوارد</label></div>
-    <div class="summary-box out"><span>${totalOut.toLocaleString("ar-SA")}</span><label>إجمالي الصادر</label></div>
-    <div class="summary-box balance"><span>${Number(item?.quantity).toLocaleString("ar-SA")}</span><label>الرصيد الحالي</label></div>
+    <div class="summary-box in"><span>${totalIn.toLocaleString("ar-EG")}</span><label>إجمالي الوارد</label></div>
+    <div class="summary-box out"><span>${totalOut.toLocaleString("ar-EG")}</span><label>إجمالي الصادر</label></div>
+    <div class="summary-box balance"><span>${Number(item?.quantity).toLocaleString("ar-EG")}</span><label>الرصيد الحالي</label></div>
   </div>
   <table>
     <thead><tr>
@@ -115,8 +115,8 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
           {[
             { label: "كود الصنف", value: item?.item_code || "–" },
             { label: "الفئة", value: item?.category },
-            { label: "الرصيد الحالي", value: `${Number(item?.quantity).toLocaleString("ar-SA")} ${item?.unit}` },
-            { label: "سعر الوحدة", value: `${Number(item?.unit_price).toLocaleString("ar-SA")} ر.س` },
+            { label: "الرصيد الحالي", value: `${Number(item?.quantity).toLocaleString("ar-EG")} ${item?.unit}` },
+            { label: "سعر الوحدة", value: `${Number(item?.unit_price).toLocaleString("ar-EG")} ج.م` },
           ].map(i => (
             <div key={i.label} className="rounded-lg bg-muted/50 p-3">
               <p className="text-[10px] text-muted-foreground">{i.label}</p>
@@ -151,7 +151,7 @@ export default function MovementReportDialog({ open, onOpenChange, item }: Movem
                         {m.type}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 text-xs font-bold">{Number(m.quantity).toLocaleString("ar-SA")}</td>
+                    <td className="py-2.5 px-3 text-xs font-bold">{Number(m.quantity).toLocaleString("ar-EG")}</td>
                     <td className="py-2.5 px-3 text-xs text-muted-foreground">
                       {m.type === 'صادر' && m.target_warehouse_name ? m.target_warehouse_name + " (تحويل)" : (m.contractor_name ? m.contractor_name + " (مقاول)" : (m.source_location || "–"))}
                     </td>

@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { dashboardApi, invoicesApi } from "@/api/client";
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(v) + " ر.س";
+  new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 0 }).format(v) + " ج.م";
 
 const invoiceStatusColors: Record<string, string> = {
   "مدفوعة": "badge-success",

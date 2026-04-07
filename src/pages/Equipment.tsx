@@ -15,7 +15,7 @@ const statusColors: Record<string, string> = {
 };
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(v) + " ر.س";
+  new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 0 }).format(v) + " ج.م";
 
 export default function Equipment() {
   const [search, setSearch] = useState("");
@@ -86,7 +86,7 @@ export default function Equipment() {
             <div className="grid grid-cols-2 gap-2 mb-4">
               {[
                 { label: "سنة الصنع", value: eq.year },
-                { label: "ساعات العمل", value: `${Number(eq.hours_used).toLocaleString("ar-SA")} ساعة` },
+                { label: "ساعات العمل", value: `${Number(eq.hours_used).toLocaleString("ar-EG")} ساعة` },
                 { label: "التكلفة اليومية", value: formatCurrency(Number(eq.daily_cost)) },
                 { label: "المشروع", value: eq.project_name || "–" },
               ].map((d) => (

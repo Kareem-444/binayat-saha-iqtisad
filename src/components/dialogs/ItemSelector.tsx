@@ -82,7 +82,7 @@ export default function ItemSelector({ value, onChange, showStockValidation = fa
                     </p>
                   </div>
                   <div className="text-xs font-bold text-primary flex-shrink-0">
-                    المخزون: {Number(item.quantity || 0).toLocaleString("ar-SA")}
+                    المخزون: {Number(item.quantity || 0).toLocaleString("ar-EG")}
                   </div>
                 </div>
               </div>
@@ -114,7 +114,7 @@ export default function ItemSelector({ value, onChange, showStockValidation = fa
                   ? "text-red-600"
                   : "text-primary"
               }`}>
-                {Number(selectedItem.quantity || 0).toLocaleString("ar-SA")} {selectedItem.unit}
+                {Number(selectedItem.quantity || 0).toLocaleString("ar-EG")} {selectedItem.unit}
               </p>
               {movementType === "صادر" && Number(selectedItem.quantity || 0) <= Number(selectedItem.min_stock || 0) && (
                 <div className="flex items-center gap-1 mt-1 text-xs text-red-600">

@@ -187,7 +187,7 @@ function WarehouseDetailsDialog({ warehouse, onClose }: { warehouse: any, onClos
       'الكمية': m.quantity,
       'الوحدة': m.unit,
       'نوع الحركة': m.type,
-      'التاريخ': new Date(m.movement_date).toLocaleDateString('ar-SA'),
+      'التاريخ': new Date(m.movement_date).toLocaleDateString('ar-EG'),
       'اسم المستلم': m.contractor_name || m.employee_name || '—',
       'المسؤول': m.issued_by || m.user_name || '—',
       'ملاحظات': m.notes || '—'
@@ -239,7 +239,7 @@ function WarehouseDetailsDialog({ warehouse, onClose }: { warehouse: any, onClos
                           {m.type}
                        </span>
                     </td>
-                    <td className="p-3">{new Date(m.movement_date).toLocaleDateString('ar-SA')}</td>
+                    <td className="p-3">{new Date(m.movement_date).toLocaleDateString('ar-EG')}</td>
                     <td className="p-3 text-muted-foreground">{m.contractor_name || m.employee_name || '—'}</td>
                     <td className="p-3 text-muted-foreground">{m.issued_by || m.user_name || '—'}</td>
                     <td className="p-3 text-muted-foreground">{m.notes || '—'}</td>

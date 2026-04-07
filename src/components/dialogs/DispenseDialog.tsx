@@ -76,7 +76,7 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
       return;
     }
     if (form.quantity > Number(item?.quantity || 0)) {
-      setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-SA")} ${item?.unit})`);
+      setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-EG")} ${item?.unit})`);
       toast({ title: "الكمية المطلوبة أكبر من المتوفر في المخزون", variant: "destructive" });
       return;
     }
@@ -109,7 +109,7 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
       if (Number(value) <= 0) {
         setQuantityError("الكمية يجب أن تكون أكبر من صفر");
       } else if (Number(value) > Number(item?.quantity || 0)) {
-        setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-SA")} ${item?.unit})`);
+        setQuantityError(`الكمية المطلوبة أكبر من المتوفر في المخزون (${Number(item?.quantity || 0).toLocaleString("ar-EG")} ${item?.unit})`);
       } else {
         setQuantityError("");
       }
@@ -135,7 +135,7 @@ export default function DispenseDialog({ open, onOpenChange, item }: DispenseDia
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">الرصيد المتاح</p>
-              <p className="text-xl font-black text-primary">{Number(item?.quantity || 0).toLocaleString("ar-SA")} {item?.unit}</p>
+              <p className="text-xl font-black text-primary">{Number(item?.quantity || 0).toLocaleString("ar-EG")} {item?.unit}</p>
             </div>
           </div>
         </div>

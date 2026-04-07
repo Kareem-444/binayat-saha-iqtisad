@@ -140,7 +140,7 @@ function EmployeeMovementsDialog({ employee, onClose }: { employee: any; onClose
             إجمالي الحركات: {movements.length} حركة
             {totalValue > 0 && (
               <span className="mr-4 font-bold text-primary">
-                | إجمالي القيمة: {new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(totalValue)} ر.س
+                | إجمالي القيمة: {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(totalValue)} ج.م
               </span>
             )}
           </p>
@@ -173,14 +173,14 @@ function EmployeeMovementsDialog({ employee, onClose }: { employee: any; onClose
                   <td className="p-3">{m.unit || '—'}</td>
                   <td className="p-3 font-bold text-red-600">{m.quantity}</td>
                   <td className="p-3 text-muted-foreground">
-                    {m.unit_price ? new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(m.unit_price) : '—'}
+                    {m.unit_price ? new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(m.unit_price) : '—'}
                   </td>
                   <td className="p-3 font-bold text-primary">
-                    {m.unit_price ? new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(Number(m.quantity || 0) * Number(m.unit_price || 0)) + ' ر.س' : '—'}
+                    {m.unit_price ? new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(Number(m.quantity || 0) * Number(m.unit_price || 0)) + ' ج.م' : '—'}
                   </td>
                   <td className="p-3 font-mono text-xs">{m.permission_number || '—'}</td>
                   <td className="p-3 text-muted-foreground">{m.warehouse_name || '—'}</td>
-                  <td className="p-3">{new Date(m.movement_date).toLocaleDateString('ar-SA')}</td>
+                  <td className="p-3">{new Date(m.movement_date).toLocaleDateString('ar-EG')}</td>
                   <td className="p-3 text-muted-foreground">{m.notes || "—"}</td>
                 </tr>
               ))}

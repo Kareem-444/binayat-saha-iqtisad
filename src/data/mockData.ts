@@ -81,8 +81,8 @@ export const notifications = [
   { id: 1, type: "warning", title: "مخزون منخفض", message: "قفازات العمل أقل من الحد الأدنى (65 / 100)", time: "منذ ساعة", read: false },
   { id: 2, type: "warning", title: "مخزون منخفض", message: "خوذة السلامة أقل من الحد الأدنى (65 / 100)", time: "منذ ساعتين", read: false },
   { id: 3, type: "info", title: "صيانة معدة", message: "خلاطة الخرسانة في مرحلة الصيانة", time: "منذ 3 ساعات", read: false },
-  { id: 4, type: "success", title: "طلب شراء معتمد", message: "تم اعتماد PO-2024-002 بقيمة 128,000 ريال", time: "منذ 5 ساعات", read: true },
-  { id: 5, type: "error", title: "فاتورة متأخرة", message: "الفاتورة INV-2024-043 متأخرة بقيمة 500,000 ريال", time: "منذ يوم", read: true },
+  { id: 4, type: "success", title: "طلب شراء معتمد", message: "تم اعتماد PO-2024-002 بقيمة 128,000 جنيه", time: "منذ 5 ساعات", read: true },
+  { id: 5, type: "error", title: "فاتورة متأخرة", message: "الفاتورة INV-2024-043 متأخرة بقيمة 500,000 جنيه", time: "منذ يوم", read: true },
 ];
 
 export const recentActivities = [

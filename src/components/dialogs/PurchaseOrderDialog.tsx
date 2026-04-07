@@ -69,7 +69,7 @@ export default function PurchaseOrderDialog({ open, onOpenChange }: PurchaseOrde
               <Input type="number" min={1} required value={form.items_count || ""} onChange={e => update("items_count", Number(e.target.value))} />
             </div>
             <div className="space-y-2">
-              <Label>القيمة الإجمالية (ر.س) *</Label>
+              <Label>القيمة الإجمالية (ج.م) *</Label>
               <Input type="number" step="0.01" min={0} required value={form.total || ""} onChange={e => update("total", Number(e.target.value))} />
             </div>
           </div>

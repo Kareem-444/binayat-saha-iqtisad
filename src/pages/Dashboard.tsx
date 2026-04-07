@@ -30,7 +30,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }: {
   </div>
 );
 
-const formatCurrency = (v: number) => new Intl.NumberFormat("ar-SA", { style: "currency", currency: "SAR", maximumFractionDigits: 0 }).format(v);
+const formatCurrency = (v: number) => new Intl.NumberFormat("ar-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
 
 const projectStatusColors: Record<string, string> = {
   "نشط": "badge-success",
@@ -82,7 +82,7 @@ export default function Dashboard() {
         </div>
         <div className="relative z-10 mt-4 flex gap-3 flex-wrap">
           <div className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
-            {new Date().toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            {new Date().toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="قيمة المخزون"
-          value={formatCurrency(totalInventoryValue).replace("ر.س.", "").trim() + " ر.س"}
+          value={formatCurrency(totalInventoryValue).replace("ج.م.", "").trim() + " ج.م"}
           subtitle={`${inventory.length} صنف مخزني`}
           icon={Package}
           color="bg-amber-100 text-amber-700"
@@ -114,8 +114,8 @@ export default function Dashboard() {
         />
         <StatCard
           title="الإيرادات (نوفمبر)"
-          value="2.0M ر.س"
-          subtitle="صافي الربح: 650K ر.س"
+          value="2.0M ج.م"
+          subtitle="صافي الربح: 650K ج.م"
           icon={DollarSign}
           color="bg-purple-100 text-purple-700"
           trend={{ value: "-12% عن أكتوبر", up: false }}

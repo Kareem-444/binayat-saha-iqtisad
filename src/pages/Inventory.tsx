@@ -18,7 +18,7 @@ const categoryColors: Record<string, string> = {
 };
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(v) + " ر.س";
+  new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 0 }).format(v) + " ج.م";
 
 export default function Inventory() {
   const [search, setSearch] = useState("");
@@ -110,7 +110,7 @@ export default function Inventory() {
                 'نوع الحركة': m.type,
                 'الكمية': m.quantity,
                 'الوحدة': m.unit,
-                'التاريخ': new Date(m.movement_date).toLocaleDateString('ar-SA'),
+                'التاريخ': new Date(m.movement_date).toLocaleDateString('ar-EG'),
                 'نوع المستلم': m.employee_name ? 'موظف' : m.destination_warehouse_name ? 'مستودع' : m.contractor_name ? 'مقاول' : '—',
                 'اسم المستلم': m.employee_name || m.destination_warehouse_name || m.contractor_name || '—',
                 'المستودع المصدر': m.warehouse_name || '—',
@@ -162,12 +162,12 @@ export default function Inventory() {
                     </td>
                     <td className="py-3 px-4">
                       <span className={`text-xs font-bold ${isLow ? "text-red-500" : "text-foreground"}`}>
-                        {Number(item.quantity).toLocaleString("ar-SA")} {item.unit}
+                        {Number(item.quantity).toLocaleString("ar-EG")} {item.unit}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs text-muted-foreground">{Number(item.min_stock).toLocaleString("ar-SA")} {item.unit}</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">{Number(item.min_stock).toLocaleString("ar-EG")} {item.unit}</td>
                     <td className="py-3 px-4 text-xs text-muted-foreground">{item.warehouse_name}</td>
-                    <td className="py-3 px-4 text-xs text-muted-foreground">{Number(item.unit_price).toLocaleString("ar-SA")} ر.س</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">{Number(item.unit_price).toLocaleString("ar-EG")} ج.م</td>
                     <td className="py-3 px-4 text-xs font-semibold text-foreground">{formatCurrency(Number(item.quantity) * Number(item.unit_price))}</td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${isLow ? "badge-danger" : "badge-success"}`}>
