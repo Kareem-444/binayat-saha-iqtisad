@@ -16,6 +16,7 @@ const inventorySchema = z.object({
   unit_price: z.number().min(0).default(0),
   warehouse_id: z.number().optional().nullable(),
   warehouse_name: z.string().optional(),
+  added_date: z.string().optional().nullable(),
 });
 
 // GET /api/inventory
@@ -66,12 +67,12 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/inventory
 router.post('/', requireRole('admin', 'manager'), validate(inventorySchema), async (req, res, next) => {
   try {
-    const { item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name } = req.body;
+    const { item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name, added_date } = req.body;
     const code = item_code === "" ? null : item_code;
     const result = await pool.query(
-      `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name]
+      `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name, added_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, COALESCE($10, CURRENT_DATE)) RETURNING *`,
+      [code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name, added_date || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -82,12 +83,12 @@ router.post('/', requireRole('admin', 'manager'), validate(inventorySchema), asy
 // PUT /api/inventory/:id
 router.put('/:id', requireRole('admin', 'manager'), validate(inventorySchema), async (req, res, next) => {
   try {
-    const { item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name } = req.body;
+    const { item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name, added_date } = req.body;
     const code = item_code === "" ? null : item_code;
     const result = await pool.query(
-      `UPDATE inventory_items SET item_code=$1, name=$2, category=$3, unit=$4, quantity=$5, min_stock=$6, unit_price=$7, warehouse_id=$8, warehouse_name=$9, last_updated=CURRENT_DATE, updated_at=NOW()
-       WHERE id=$10 RETURNING *`,
-      [code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name, req.params.id]
+      `UPDATE inventory_items SET item_code=$1, name=$2, category=$3, unit=$4, quantity=$5, min_stock=$6, unit_price=$7, warehouse_id=$8, warehouse_name=$9, added_date=COALESCE($10, added_date), last_updated=CURRENT_DATE, updated_at=NOW()
+       WHERE id=$11 RETURNING *`,
+      [code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name, added_date || null, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'الصنف غير موجود' });
     res.json(result.rows[0]);

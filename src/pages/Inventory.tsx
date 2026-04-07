@@ -10,6 +10,8 @@ import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
 import MovementReportDialog from "@/components/dialogs/MovementReportDialog";
 import DispenseDialog from "@/components/dialogs/DispenseDialog";
 import AddItemMovementDialog from "@/components/dialogs/AddItemMovementDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const categoryColors: Record<string, string> = {
   "مواد": "badge-info",
@@ -29,6 +31,11 @@ export default function Inventory() {
   const [reportItem, setReportItem] = useState<any>(null);
   const [dispenseItem, setDispenseItem] = useState<any>(null);
   const [addMovementItem, setAddMovementItem] = useState<any>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportDates, setExportDates] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
 
   const categories = ["الكل", "مواد", "معدات", "أدوات"];
 
@@ -102,27 +109,7 @@ export default function Inventory() {
           ))}
         </div>
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
-          <Button variant="outline" className="gap-2 border-green-600 text-green-700 hover:bg-green-50" onClick={async () => {
-            try {
-              const res = await inventoryMovementsApi.list({ limit: 500 });
-              const data = res.data.map((m: any) => ({
-                'اسم الصنف': m.item_name,
-                'نوع الحركة': m.type,
-                'الكمية': m.quantity,
-                'الوحدة': m.unit,
-                'التاريخ': new Date(m.movement_date).toLocaleDateString('ar-EG'),
-                'نوع المستلم': m.employee_name ? 'موظف' : m.destination_warehouse_name ? 'مستودع' : m.contractor_name ? 'مقاول' : '—',
-                'اسم المستلم': m.employee_name || m.destination_warehouse_name || m.contractor_name || '—',
-                'المستودع المصدر': m.warehouse_name || '—',
-                'موظف': m.employee_name || '—',
-                'ملاحظات': m.notes || '—',
-              }));
-              const ws = XLSX.utils.json_to_sheet(data);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-              XLSX.writeFile(wb, `inventory-movements-${new Date().toISOString().split('T')[0]}.xlsx`);
-            } catch { /* ignore */ }
-          }}>
+          <Button variant="outline" className="gap-2 border-green-600 text-green-700 hover:bg-green-50" onClick={() => setExportOpen(true)}>
              <Download className="h-4 w-4" /> تصدير تقرير الحركات
           </Button>
           <Button variant="outline" className="gap-2 text-primary border-primary/20 bg-primary/5 hover:bg-primary/10" onClick={() => window.location.href = '/inventory/permissions'}>
@@ -226,6 +213,55 @@ export default function Inventory() {
         onOpenChange={(open) => !open && setAddMovementItem(null)}
         item={addMovementItem}
       />
+
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تصدير تقرير الحركات</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label>من تاريخ</Label>
+              <Input type="date" value={exportDates.start} onChange={e => setExportDates(p => ({ ...p, start: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>إلى تاريخ</Label>
+              <Input type="date" value={exportDates.end} onChange={e => setExportDates(p => ({ ...p, end: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setExportOpen(false)}>إلغاء</Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={async () => {
+              try {
+                const res = await inventoryMovementsApi.list({ 
+                  startDate: exportDates.start, 
+                  endDate: exportDates.end,
+                  limit: 1000 
+                });
+                const data = res.data.map((m: any) => ({
+                  'اسم الصنف': m.item_name,
+                  'نوع الحركة': m.type,
+                  'الكمية': m.quantity,
+                  'الوحدة': m.unit,
+                  'التاريخ': new Date(m.movement_date).toLocaleDateString('ar-EG'),
+                  'نوع المستلم': m.employee_name ? 'موظف' : m.destination_warehouse_name ? 'مستودع' : m.contractor_name ? 'مقاول' : '—',
+                  'اسم المستلم': m.employee_name || m.destination_warehouse_name || m.contractor_name || '—',
+                  'المستودع المصدر': m.warehouse_name || '—',
+                  'موظف': m.employee_name || '—',
+                  'ملاحظات': m.notes || '—',
+                }));
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+                XLSX.writeFile(wb, `inventory-movements-${exportDates.start}-to-${exportDates.end}.xlsx`);
+                setExportOpen(false);
+              } catch { /* ignore */ }
+            }}>
+              تصدير Excel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

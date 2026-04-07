@@ -25,7 +25,7 @@ const movementSchema = z.object({
 // GET /api/inventory-movements?item_id=X
 router.get('/', async (req, res, next) => {
   try {
-    const { item_id, project_id, contractor_id, warehouse_id, employee_id, limit = 100 } = req.query;
+    const { item_id, project_id, contractor_id, warehouse_id, employee_id, limit = 100, startDate, endDate } = req.query;
     let query = `SELECT m.*, 
                         i.name as item_name, i.item_code, i.unit, i.unit_price, i.warehouse_name, i.quantity as current_stock,
                         c.name as contractor_name_join,
@@ -48,6 +48,8 @@ router.get('/', async (req, res, next) => {
     if (contractor_id) { params.push(contractor_id); query += ` AND m.contractor_id = $${params.length}`; }
     if (employee_id) { params.push(employee_id); query += ` AND m.employee_id = $${params.length}`; }
     if (warehouse_id) { params.push(warehouse_id); query += ` AND (i.warehouse_id = $${params.length} OR m.target_warehouse_id = $${params.length} OR m.destination_warehouse_id = $${params.length})`; }
+    if (startDate) { params.push(startDate); query += ` AND m.movement_date >= $${params.length}`; }
+    if (endDate) { params.push(endDate); query += ` AND m.movement_date <= $${params.length}`; }
     query += ' ORDER BY m.movement_date DESC, m.id DESC';
     params.push(Math.min(parseInt(limit), 500));
     query += ` LIMIT $${params.length}`;

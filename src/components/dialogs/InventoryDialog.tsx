@@ -27,6 +27,7 @@ export default function InventoryDialog({ open, onOpenChange, editItem }: Invent
     min_stock: 0,
     unit_price: 0,
     warehouse_name: "",
+    added_date: new Date().toISOString().split('T')[0],
   });
 
   useEffect(() => {
@@ -40,9 +41,10 @@ export default function InventoryDialog({ open, onOpenChange, editItem }: Invent
         min_stock: Number(editItem.min_stock) || 0,
         unit_price: Number(editItem.unit_price) || 0,
         warehouse_name: editItem.warehouse_name || "",
+        added_date: editItem.added_date ? new Date(editItem.added_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       });
     } else {
-      setForm({ item_code: "", name: "", category: "مواد", unit: "", quantity: 0, min_stock: 0, unit_price: 0, warehouse_name: "" });
+      setForm({ item_code: "", name: "", category: "مواد", unit: "", quantity: 0, min_stock: 0, unit_price: 0, warehouse_name: "", added_date: new Date().toISOString().split('T')[0] });
     }
   }, [editItem, open]);
 
@@ -116,9 +118,15 @@ export default function InventoryDialog({ open, onOpenChange, editItem }: Invent
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>المستودع</Label>
-            <Input placeholder="اسم المستودع" value={form.warehouse_name} onChange={e => update("warehouse_name", e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>المستودع</Label>
+              <Input placeholder="اسم المستودع" value={form.warehouse_name} onChange={e => update("warehouse_name", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>تاريخ الإضافة</Label>
+              <Input type="date" value={form.added_date} onChange={e => update("added_date", e.target.value)} />
+            </div>
           </div>
 
           <div className="flex gap-2 justify-end pt-2">

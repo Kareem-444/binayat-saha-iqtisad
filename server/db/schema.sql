@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     unit_price NUMERIC(12,2) DEFAULT 0,
     warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE SET NULL,
     warehouse_name VARCHAR(200),
+    added_date DATE DEFAULT CURRENT_DATE,
     last_updated DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
