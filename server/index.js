@@ -50,8 +50,21 @@ const PORT = process.env.PORT || 5000;
 
 // Security
 app.use(helmet({ contentSecurityPolicy: false }));
+
+// CORS - supports multiple comma-separated origins
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:8080')
+  .split(',')
+  .map(o => o.trim());
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
