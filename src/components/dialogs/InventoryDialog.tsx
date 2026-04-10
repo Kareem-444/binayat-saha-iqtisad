@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { inventoryApi } from "@/api/client";
 import { useToast } from "@/hooks/use-toast";
+import CatalogItemSearch from "@/components/ui/CatalogItemSearch";
 
 interface InventoryDialogProps {
   open: boolean;
@@ -77,7 +78,15 @@ export default function InventoryDialog({ open, onOpenChange, editItem }: Invent
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>كود الصنف</Label>
-              <Input placeholder="مثال: MAT-001" value={form.item_code} onChange={e => update("item_code", e.target.value)} />
+              <CatalogItemSearch
+                value={form.item_code}
+                onChange={(code, name, unit) => {
+                  update("item_code", code);
+                  update("name", name);
+                  update("unit", unit);
+                }}
+                placeholder="ابحث بالكود أو الاسم..."
+              />
             </div>
             <div className="space-y-2">
               <Label>اسم الصنف *</Label>

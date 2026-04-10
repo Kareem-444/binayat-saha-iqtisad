@@ -22,6 +22,7 @@ const navGroups = [
     label: "المخزون والمشتريات",
     items: [
       { href: "/inventory", icon: Package, label: "المخزون", badge: "2" },
+      { href: "/items-catalog", icon: Package, label: "كتالوج الأصناف" },
       { href: "/warehouses", icon: Building2, label: "المستودعات" },
       { href: "/procurement", icon: ShoppingCart, label: "المشتريات والموردين" },
     ],

@@ -7,10 +7,10 @@ import { Plus, Trash2, Save, Package, Truck, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { inventoryPermissionsApi, inventoryApi, projectsApi, warehousesApi, employeesApi } from "@/api/client";
+import { inventoryPermissionsApi, projectsApi, warehousesApi, employeesApi } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import ItemSelector from "@/components/dialogs/ItemSelector";
+import CatalogItemSearch from "@/components/ui/CatalogItemSearch";
 
 const itemSchema = z.object({
   item_id: z.coerce.number().optional().nullable(),
@@ -59,7 +59,7 @@ export default function PermissionForm() {
   const [searchParams] = useSearchParams();
   const { id } = useParams();
   const isEdit = !!id;
-  
+
   const directionParam = searchParams.get('direction') === 'dispense' ? 'dispense' : 'add';
 
   const { data: warhouses = [] } = useQuery({
@@ -73,8 +73,8 @@ export default function PermissionForm() {
   });
 
   const { data: employees = [] } = useQuery({
-     queryKey: ['employees'],
-     queryFn: () => employeesApi.list().then(r => r.data)
+    queryKey: ['employees'],
+    queryFn: () => employeesApi.list().then(r => r.data)
   });
 
   const { data: editData, isLoading: isLoadingEdit } = useQuery({
@@ -106,7 +106,7 @@ export default function PermissionForm() {
   const targetType = watch('target_type');
   const itemsArray = watch('items');
   const currentWarehouseId = watch('warehouse_id');
-  
+
   // Auto-set warehouse for dispense mode so the DB isn't broken but the field is safely hidden
   useEffect(() => {
     if (direction === 'dispense' && warhouses.length > 0 && (!currentWarehouseId || currentWarehouseId === 0) && !isEdit) {
@@ -122,17 +122,17 @@ export default function PermissionForm() {
       setValue('type', editData.type);
       setValue('date', new Date(editData.date).toISOString().split('T')[0]);
       setValue('warehouse_id', editData.warehouse_id);
-      
+
       if (editData.project_id) setValue('project_id', editData.project_id);
       if (editData.supplier_name) setValue('supplier_name', editData.supplier_name);
       if (editData.vehicle_number) setValue('vehicle_number', editData.vehicle_number);
       if (editData.driver_name) setValue('driver_name', editData.driver_name);
       if (editData.notes) setValue('notes', editData.notes);
-      
+
       if (editData.target_type) setValue('target_type', editData.target_type);
       if (editData.employee_id) setValue('employee_id', editData.employee_id);
       else if (editData.contractor_id) setValue('employee_id', editData.contractor_id);
-      
+
       if (editData.target_warehouse_id) setValue('target_warehouse_id', editData.target_warehouse_id);
 
       const mappedItems = editData.items.map((item: any) => ({
@@ -187,7 +187,7 @@ export default function PermissionForm() {
   }, [itemsArray, direction]);
 
   if (isEdit && isLoadingEdit) {
-     return <div className="p-20 text-center">جاري تحميل بيانات الإذن...</div>;
+    return <div className="p-20 text-center">جاري تحميل بيانات الإذن...</div>;
   }
 
   return (
@@ -201,12 +201,12 @@ export default function PermissionForm() {
           <p className="text-sm text-muted-foreground mt-1">تعبئة بيانات الإذن وأصناف المخزون</p>
         </div>
         <Button variant="outline" onClick={() => navigate('/inventory/permissions')} className="gap-2">
-           الإلغاء والعودة
+          الإلغاء والعودة
         </Button>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        
+
         {/* Header Section */}
         <div className="p-6 bg-card border border-border rounded-xl shadow-sm space-y-6">
           <h2 className="text-lg font-bold border-b pb-2">البيانات الأساسية</h2>
@@ -216,11 +216,11 @@ export default function PermissionForm() {
               <Input {...register('permission_number')} />
               {errors.permission_number && <p className="text-xs text-red-500">{errors.permission_number.message}</p>}
             </div>
-            
+
             <div className="space-y-2">
               <Label>نوع الحركة</Label>
-              <select 
-                {...register('type')} 
+              <select
+                {...register('type')}
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
                 {currentTypes.map(t => <option key={t} value={t}>{t}</option>)}
@@ -236,8 +236,8 @@ export default function PermissionForm() {
             {direction === 'add' && (
               <div className="space-y-2">
                 <Label>المستودع (المصدر)</Label>
-                <select 
-                  {...register('warehouse_id')} 
+                <select
+                  {...register('warehouse_id')}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 >
                   <option value="">-- اختر المستودع --</option>
@@ -247,11 +247,11 @@ export default function PermissionForm() {
               </div>
             )}
 
-            {(direction === 'dispense' || type === 'ارتجاع' || type === 'إضافة محولة') && (
+            {(direction === 'add' || direction === 'dispense' || type === 'ارتجاع' || type === 'إضافة محولة') && (
               <div className="space-y-2">
                 <Label>المشروع</Label>
-                <select 
-                  {...register('project_id')} 
+                <select
+                  {...register('project_id')}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 >
                   <option value="">-- اختر المشروع --</option>
@@ -262,50 +262,50 @@ export default function PermissionForm() {
 
             {direction === 'dispense' && (
               <>
-                 <div className="space-y-2">
-                   <Label>نوع جهة الصرف (المستلم)</Label>
-                   <select 
-                     {...register('target_type', {
-                        onChange: () => {
-                           setValue('employee_id', null as any);
-                           setValue('target_warehouse_id', null as any);
-                        }
-                     })} 
-                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                   >
-                     <option value="">-- غير محدد --</option>
-                     <option value="contractor">مقاول</option>
-                     <option value="warehouse">مستودع (تحويل)</option>
-                   </select>
-                 </div>
+                <div className="space-y-2">
+                  <Label>نوع جهة الصرف (المستلم)</Label>
+                  <select
+                    {...register('target_type', {
+                      onChange: () => {
+                        setValue('employee_id', null as any);
+                        setValue('target_warehouse_id', null as any);
+                      }
+                    })}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  >
+                    <option value="">-- غير محدد --</option>
+                    <option value="contractor">مقاول</option>
+                    <option value="warehouse">مستودع (تحويل)</option>
+                  </select>
+                </div>
 
-                 {targetType === 'contractor' && (
-                    <div className="space-y-2">
-                      <Label className="text-red-500">* المقاول (الجهة المستلمة)</Label>
-                      <select 
-                        {...register('employee_id')} 
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background border-red-200 focus:border-red-500"
-                      >
-                        <option value="">-- اختر المقاول --</option>
-                        {employees.map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                      </select>
-                      {errors.employee_id && <p className="text-xs text-red-600 font-bold">{errors.employee_id.message as string}</p>}
-                    </div>
-                 )}
+                {targetType === 'contractor' && (
+                  <div className="space-y-2">
+                    <Label className="text-red-500">* المقاول (الجهة المستلمة)</Label>
+                    <select
+                      {...register('employee_id')}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background border-red-200 focus:border-red-500"
+                    >
+                      <option value="">-- اختر المقاول --</option>
+                      {employees.map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                    </select>
+                    {errors.employee_id && <p className="text-xs text-red-600 font-bold">{errors.employee_id.message as string}</p>}
+                  </div>
+                )}
 
-                 {targetType === 'warehouse' && (
-                    <div className="space-y-2">
-                      <Label className="text-blue-500">* المستودع الهدف (الجهة المستلمة)</Label>
-                      <select 
-                        {...register('target_warehouse_id')} 
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background border-blue-200 focus:border-blue-500"
-                      >
-                        <option value="">-- اختر المستودع الهدف --</option>
-                        {warhouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
-                      </select>
-                      {errors.target_warehouse_id && <p className="text-xs text-red-600 font-bold">{errors.target_warehouse_id.message as string}</p>}
-                    </div>
-                 )}
+                {targetType === 'warehouse' && (
+                  <div className="space-y-2">
+                    <Label className="text-blue-500">* المستودع الهدف (الجهة المستلمة)</Label>
+                    <select
+                      {...register('target_warehouse_id')}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background border-blue-200 focus:border-blue-500"
+                    >
+                      <option value="">-- اختر المستودع الهدف --</option>
+                      {warhouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                    </select>
+                    {errors.target_warehouse_id && <p className="text-xs text-red-600 font-bold">{errors.target_warehouse_id.message as string}</p>}
+                  </div>
+                )}
               </>
             )}
 
@@ -328,7 +328,7 @@ export default function PermissionForm() {
                 </div>
               </>
             )}
-            
+
             <div className="space-y-2 md:col-span-3">
               <Label>ملاحظات</Label>
               <Input {...register('notes')} placeholder="أي تفاصيل أخرى..." />
@@ -344,18 +344,26 @@ export default function PermissionForm() {
               <Plus className="h-4 w-4" /> إضافة صنف
             </Button>
           </div>
-          
+
           {errors.items && <p className="text-xs text-red-500 font-bold">{errors.items.root?.message}</p>}
 
           <div className="space-y-4">
             {fields.map((field, index) => (
               <div key={field.id} className="p-4 border rounded-lg bg-muted/20 relative space-y-3">
-                
+
                 {direction === 'add' && (
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="w-32 space-y-2">
                       <Label>كود الصنف</Label>
-                      <Input {...register(`items.${index}.item_code` as const)} placeholder="الكود..." />
+                      <CatalogItemSearch
+                        value={itemsArray[index]?.item_code || ""}
+                        onChange={(code, name, unit) => {
+                          setValue(`items.${index}.item_code` as any, code);
+                          setValue(`items.${index}.item_name` as any, name);
+                          setValue(`items.${index}.unit` as any, unit);
+                        }}
+                        placeholder="ابحث..."
+                      />
                     </div>
 
                     <div className="flex-1 min-w-[180px] space-y-2">
@@ -382,10 +390,10 @@ export default function PermissionForm() {
                     </div>
 
                     <div className="w-28 space-y-2">
-                       <Label className="text-primary font-bold">الإجمالي</Label>
-                       <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-bold text-primary">
-                         {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))} 
-                       </div>
+                      <Label className="text-primary font-bold">الإجمالي</Label>
+                      <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-bold text-primary">
+                        {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))}
+                      </div>
                     </div>
 
                     <div className="flex-1 min-w-[140px] space-y-2">
@@ -402,22 +410,27 @@ export default function PermissionForm() {
                 {direction === 'dispense' && (
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="flex-1 min-w-[250px] space-y-2">
-                      <Label>الصنف</Label>
-                      <ItemSelector
-                        value={itemsArray[index]?.item_id || null}
-                        onChange={(itemId, item) => {
-                          if (item) {
-                            setValue(`items.${index}.item_id` as any, itemId);
-                            setValue(`items.${index}.item_code` as any, item.item_code || '');
-                            setValue(`items.${index}.item_name` as any, item.name || '');
-                            setValue(`items.${index}.unit` as any, item.unit || '');
-                            setValue(`items.${index}.stock_quantity` as any, Number(item.quantity || 0));
-                          }
+                      <Label>كود الصنف</Label>
+                      <CatalogItemSearch
+                        value={itemsArray[index]?.item_code || ""}
+                        onChange={(code, name, unit) => {
+                          setValue(`items.${index}.item_code` as any, code);
+                          setValue(`items.${index}.item_name` as any, name);
+                          setValue(`items.${index}.unit` as any, unit);
                         }}
-                        showStockValidation={true}
-                        movementType="صادر"
+                        placeholder="ابحث بالكود أو الاسم..."
                       />
                       {errors.items?.[index]?.item_name && <p className="text-[10px] text-red-500">{errors.items[index]?.item_name?.message}</p>}
+                    </div>
+
+                    <div className="flex-1 min-w-[180px] space-y-2">
+                      <Label>اسم الصنف</Label>
+                      <Input
+                        value={itemsArray[index]?.item_name || ""}
+                        readOnly
+                        placeholder="يتم التعبئة تلقائياً..."
+                        className="bg-muted text-muted-foreground cursor-not-allowed"
+                      />
                     </div>
 
                     <div className="w-28 space-y-2">
