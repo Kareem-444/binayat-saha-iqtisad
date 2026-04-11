@@ -65,7 +65,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold text-sidebar-foreground truncate">DEVCON</h1>
-            <p className="text-xs text-sidebar-foreground/50">نظام إدارة المقاولات</p>
+            <p className="text-xs text-sidebar-foreground/50">ALASHRAF</p>
           </div>
         )}
         <button

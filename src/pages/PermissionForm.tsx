@@ -149,7 +149,7 @@ export default function PermissionForm() {
   }, [editData, isEdit, setValue]);
 
   const addTypes = ['إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات'];
-  const dispenseTypes = ['صرف داخلي', 'صرف خارجي'];
+  const dispenseTypes = ['صرف داخلي', 'صرف خارجي', 'صرف تكهين'];
   const currentTypes = direction === 'add' ? addTypes : dispenseTypes;
 
   const onSubmit = async (data: FormValues) => {
@@ -433,16 +433,28 @@ export default function PermissionForm() {
                       />
                     </div>
 
-                    <div className="w-28 space-y-2">
+                    <div className="w-24 space-y-2">
                       <Label>الوحدة</Label>
                       <Input {...register(`items.${index}.unit` as const)} placeholder="حبة، طن..." />
                       {errors.items?.[index]?.unit && <p className="text-[10px] text-red-500">{errors.items[index]?.unit?.message}</p>}
                     </div>
 
-                    <div className="w-28 space-y-2">
+                    <div className="w-24 space-y-2">
                       <Label>الكمية</Label>
                       <Input type="number" step="any" {...register(`items.${index}.quantity` as const)} />
                       {errors.items?.[index]?.quantity && <p className="text-[10px] text-red-500">{errors.items[index]?.quantity?.message}</p>}
+                    </div>
+
+                    <div className="w-28 space-y-2">
+                      <Label>سعر الوحدة</Label>
+                      <Input type="number" step="any" {...register(`items.${index}.price` as const)} />
+                    </div>
+
+                    <div className="w-28 space-y-2">
+                      <Label className="text-primary font-bold">الإجمالي</Label>
+                      <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm font-bold text-primary">
+                        {new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format((itemsArray?.[index]?.quantity || 0) * (itemsArray?.[index]?.price || 0))}
+                      </div>
                     </div>
 
                     <div className="flex-1 min-w-[160px] space-y-2">

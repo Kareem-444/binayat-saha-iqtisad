@@ -18,7 +18,7 @@ const permissionItemSchema = z.object({
 
 const permissionSchema = z.object({
   permission_number: z.string().min(1, 'رقم الإذن مطلوب'),
-  type: z.enum(['إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات', 'صرف داخلي', 'صرف خارجي']),
+  type: z.enum(['إضافة مشتراه', 'ارتجاع', 'إضافة محولة', 'أول المدة', 'إيجارات', 'صرف داخلي', 'صرف خارجي', 'صرف تكهين']),
   direction: z.enum(['add', 'dispense']),
   project_id: z.number().optional().nullable(),
   warehouse_id: z.number({ required_error: 'المستودع مطلوب' }).min(1, 'المستودع مطلوب'),
@@ -117,7 +117,7 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+
     const {
       permission_number, type, direction, project_id, warehouse_id,
       supplier_name, external, vehicle_number, driver_name, supply_route, notes, items,
@@ -156,8 +156,8 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
     const warehouse_name = warehouseRes.rows[0]?.name;
     let project_name = null;
     if (project_id) {
-       const projectRes = await client.query('SELECT name FROM projects WHERE id = $1', [project_id]);
-       project_name = projectRes.rows[0]?.name;
+      const projectRes = await client.query('SELECT name FROM projects WHERE id = $1', [project_id]);
+      project_name = projectRes.rows[0]?.name;
     }
 
     // Determine dispatch location for print
@@ -246,34 +246,34 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
 
       // Warehouse Transfer Logic
       if (direction === 'dispense' && target_type === 'warehouse' && target_warehouse_id) {
-         let targetItemId;
-         const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [item.item_name, target_warehouse_id]);
-         const targetWHR = await client.query('SELECT name FROM warehouses WHERE id = $1', [target_warehouse_id]);
-         const target_warehouse_name = targetWHR.rows[0]?.name;
+        let targetItemId;
+        const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [item.item_name, target_warehouse_id]);
+        const targetWHR = await client.query('SELECT name FROM warehouses WHERE id = $1', [target_warehouse_id]);
+        const target_warehouse_name = targetWHR.rows[0]?.name;
 
-         if (targetItemRes.rows.length > 0) {
-            targetItemId = targetItemRes.rows[0].id;
-            await client.query('UPDATE inventory_items SET quantity = quantity + $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, targetItemId]);
-         } else {
-            const newItemTarget = await client.query(
-               `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
+        if (targetItemRes.rows.length > 0) {
+          targetItemId = targetItemRes.rows[0].id;
+          await client.query('UPDATE inventory_items SET quantity = quantity + $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, targetItemId]);
+        } else {
+          const newItemTarget = await client.query(
+            `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
                 VALUES ($1, $2, 'مواد', $3, $4, 0, $5, $6, $7) RETURNING id`,
-               [finalItemCode, item.item_name, item.unit, item.quantity, item.price, target_warehouse_id, target_warehouse_name]
-            );
-            targetItemId = newItemTarget.rows[0].id;
-         }
+            [finalItemCode, item.item_name, item.unit, item.quantity, item.price, target_warehouse_id, target_warehouse_name]
+          );
+          targetItemId = newItemTarget.rows[0].id;
+        }
 
-         // IN Movement for Target Warehouse
-         await client.query(
-            `INSERT INTO inventory_movements (item_id, type, quantity, notes, reference_type, reference_id, source_location)
+        // IN Movement for Target Warehouse
+        await client.query(
+          `INSERT INTO inventory_movements (item_id, type, quantity, notes, reference_type, reference_id, source_location)
              VALUES ($1, 'وارد', $2, $3, 'permission', $4, $5)`,
-            [targetItemId, item.quantity, `تحويل من مستودع ${warehouse_name} (إذن ${permission_number})`, permission.id, warehouse_name]
-         );
+          [targetItemId, item.quantity, `تحويل من مستودع ${warehouse_name} (إذن ${permission_number})`, permission.id, warehouse_name]
+        );
       }
     }
 
     await client.query('COMMIT');
-    
+
     // Return unified response
     res.status(201).json({
       ...permission,
@@ -285,7 +285,7 @@ router.post('/', requireRole('admin', 'manager'), validate(permissionSchema), as
     await client.query('ROLLBACK');
     // If our manual errors were thrown, return 400
     if (err.message.includes('رقم الإذن') || err.message.includes('غير كافية') || err.message.includes('مطلوب') || err.message.includes('لا يمكن')) {
-       return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: err.message });
     }
     next(err);
   } finally {
@@ -298,7 +298,7 @@ router.put('/:id', requireRole('admin', 'manager'), validate(permissionSchema), 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+
     const { id } = req.params;
     const {
       permission_number, type, direction, project_id, warehouse_id,
@@ -330,14 +330,14 @@ router.put('/:id', requireRole('admin', 'manager'), validate(permissionSchema), 
       } else {
         await client.query('UPDATE inventory_items SET quantity = quantity + $1 WHERE id = $2', [oldItem.quantity, oldItem.item_id]);
         if (oldPermission.target_type === 'warehouse' && oldPermission.target_warehouse_id) {
-           const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [oldItem.item_name, oldPermission.target_warehouse_id]);
-           if (targetItemRes.rows.length > 0) {
-              await client.query('UPDATE inventory_items SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1', [oldItem.quantity, targetItemRes.rows[0].id]);
-           }
+          const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [oldItem.item_name, oldPermission.target_warehouse_id]);
+          if (targetItemRes.rows.length > 0) {
+            await client.query('UPDATE inventory_items SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1', [oldItem.quantity, targetItemRes.rows[0].id]);
+          }
         }
       }
     }
-    
+
     await client.query(`DELETE FROM inventory_movements WHERE reference_type = 'permission' AND reference_id = $1`, [id]);
     await client.query('DELETE FROM inventory_permission_items WHERE permission_id = $1', [id]);
 
@@ -356,8 +356,8 @@ router.put('/:id', requireRole('admin', 'manager'), validate(permissionSchema), 
     const warehouse_name = warehouseRes.rows[0]?.name;
     let project_name = null;
     if (project_id) {
-       const projectRes = await client.query('SELECT name FROM projects WHERE id = $1', [project_id]);
-       project_name = projectRes.rows[0]?.name;
+      const projectRes = await client.query('SELECT name FROM projects WHERE id = $1', [project_id]);
+      project_name = projectRes.rows[0]?.name;
     }
 
     let dispatchLocation = '';
@@ -427,28 +427,28 @@ router.put('/:id', requireRole('admin', 'manager'), validate(permissionSchema), 
       );
 
       if (direction === 'dispense' && target_type === 'warehouse' && target_warehouse_id) {
-         let targetItemId;
-         const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [item.item_name, target_warehouse_id]);
-         const targetWHR = await client.query('SELECT name FROM warehouses WHERE id = $1', [target_warehouse_id]);
-         const target_warehouse_name = targetWHR.rows[0]?.name;
+        let targetItemId;
+        const targetItemRes = await client.query('SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2', [item.item_name, target_warehouse_id]);
+        const targetWHR = await client.query('SELECT name FROM warehouses WHERE id = $1', [target_warehouse_id]);
+        const target_warehouse_name = targetWHR.rows[0]?.name;
 
-         if (targetItemRes.rows.length > 0) {
-            targetItemId = targetItemRes.rows[0].id;
-            await client.query('UPDATE inventory_items SET quantity = quantity + $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, targetItemId]);
-         } else {
-            const newItemTarget = await client.query(
-               `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
+        if (targetItemRes.rows.length > 0) {
+          targetItemId = targetItemRes.rows[0].id;
+          await client.query('UPDATE inventory_items SET quantity = quantity + $1, last_updated = CURRENT_DATE, updated_at = NOW() WHERE id = $2', [item.quantity, targetItemId]);
+        } else {
+          const newItemTarget = await client.query(
+            `INSERT INTO inventory_items (item_code, name, category, unit, quantity, min_stock, unit_price, warehouse_id, warehouse_name)
                 VALUES ($1, $2, 'مواد', $3, $4, 0, $5, $6, $7) RETURNING id`,
-               [finalItemCode, item.item_name, item.unit, item.quantity, item.price, target_warehouse_id, target_warehouse_name]
-            );
-            targetItemId = newItemTarget.rows[0].id;
-         }
+            [finalItemCode, item.item_name, item.unit, item.quantity, item.price, target_warehouse_id, target_warehouse_name]
+          );
+          targetItemId = newItemTarget.rows[0].id;
+        }
 
-         await client.query(
-            `INSERT INTO inventory_movements (item_id, type, quantity, notes, reference_type, reference_id, source_location)
+        await client.query(
+          `INSERT INTO inventory_movements (item_id, type, quantity, notes, reference_type, reference_id, source_location)
              VALUES ($1, 'وارد', $2, $3, 'permission', $4, $5)`,
-            [targetItemId, item.quantity, `تعديل تحويل من مستودع ${warehouse_name} (إذن ${permission_number})`, permission.id, warehouse_name]
-         );
+          [targetItemId, item.quantity, `تعديل تحويل من مستودع ${warehouse_name} (إذن ${permission_number})`, permission.id, warehouse_name]
+        );
       }
     }
 
@@ -462,7 +462,7 @@ router.put('/:id', requireRole('admin', 'manager'), validate(permissionSchema), 
   } catch (err) {
     await client.query('ROLLBACK');
     if (err.message.includes('رقم الإذن') || err.message.includes('غير كافية') || err.message.includes('مطلب') || err.message.includes('لا يمكن')) {
-       return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: err.message });
     }
     next(err);
   } finally {

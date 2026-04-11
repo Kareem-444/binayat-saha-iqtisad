@@ -11,7 +11,7 @@ const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres:Kareem.30511@localhost:5432/freddiebazaar',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, // Increased for Neon serverless cold starts
 });
 
 pool.on('error', (err) => {

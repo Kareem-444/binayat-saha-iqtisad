@@ -46,7 +46,7 @@ export default function Login() {
             <img src={devconLogo} alt="Devcon" className="h-20 object-contain drop-shadow-2xl" />
           </div>
           <h1 className="text-2xl font-black text-white">DEVCON</h1>
-          <p className="text-white/50 text-sm mt-1">نظام إدارة المقاولات</p>
+          <p className="text-white/50 text-sm mt-1">ALASHRAF  </p>
         </div>
 
         {/* Login Card */}
