@@ -8,6 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import devconLogo from "@/assets/Devcon_logo.png";
 
 const navGroups = [
   {
@@ -59,7 +60,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
         <div className="flex items-center justify-center flex-shrink-0" style={{ width: collapsed ? '40px' : '80px' }}>
-          <img src="/Devcon_logo.png" alt="Devcon" className="object-contain" style={{ height: '36px', width: 'auto', maxWidth: collapsed ? '36px' : '80px' }} />
+          <img src={devconLogo} alt="Devcon" className="object-contain" style={{ height: '36px', width: 'auto', maxWidth: collapsed ? '36px' : '80px' }} />
         </div>
         {!collapsed && (
           <div className="flex-1 min-w-0">

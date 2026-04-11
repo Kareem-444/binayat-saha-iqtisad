@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Building2, Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
+import devconLogo from "@/assets/Devcon_logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -42,7 +43,7 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
-            <img src="/Devcon_logo.png" alt="Devcon" className="h-20 object-contain drop-shadow-2xl" />
+            <img src={devconLogo} alt="Devcon" className="h-20 object-contain drop-shadow-2xl" />
           </div>
           <h1 className="text-2xl font-black text-white">DEVCON</h1>
           <p className="text-white/50 text-sm mt-1">نظام إدارة المقاولات</p>

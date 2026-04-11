@@ -16,6 +16,7 @@ import {
   convertInchesToTwip,
   TableLayoutType,
 } from "docx";
+import devconLogoUrl from "@/assets/Devcon_logo.png";
 
 // ===== Colors =====
 const NAVY = "0D2B6E";
@@ -26,7 +27,7 @@ const GOLD = "C9A84C";
 // ===== Fetch logo as ArrayBuffer =====
 async function getLogoBuffer(): Promise<ArrayBuffer | null> {
   try {
-    const res = await fetch("/Devcon_logo.png");
+    const res = await fetch(devconLogoUrl);
     if (!res.ok) return null;
     return await res.arrayBuffer();
   } catch {
