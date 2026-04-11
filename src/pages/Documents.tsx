@@ -182,9 +182,13 @@ export default function Documents() {
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1">
                       {doc.file_path && (
-                        <a href={doc.file_path} target="_blank" rel="noreferrer" className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted transition-colors" title="استعراض / تحميل">
+                        <button
+                          onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${doc.file_path}`, '_blank')}
+                          className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted transition-colors"
+                          title="استعراض / تحميل"
+                        >
                           <Eye className="h-3.5 w-3.5 text-blue-600" />
-                        </a>
+                        </button>
                       )}
                       <button onClick={() => setDeleteDoc(doc)} className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted transition-colors" title="حذف">
                         <Trash2 className="h-3.5 w-3.5 text-red-500" />

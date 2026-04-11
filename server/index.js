@@ -44,6 +44,8 @@ import activityLogRoutes from './routes/activityLog.js';
 import inventoryMovementRoutes from './routes/inventoryMovements.js';
 import inventoryPermissionsRoutes from './routes/inventoryPermissions.js';
 import contractorRoutes from './routes/contractors.js';
+import settingsRoutes from './routes/settings.js';
+import usersRoutes from './routes/users.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -115,6 +117,8 @@ app.use('/api/activity-log', authenticateToken, activityLogRoutes);
 app.use('/api/inventory-movements', authenticateToken, inventoryMovementRoutes);
 app.use('/api/inventory-permissions', authenticateToken, inventoryPermissionsRoutes);
 app.use('/api/contractors', authenticateToken, contractorRoutes);
+app.use('/api/settings', authenticateToken, settingsRoutes);
+app.use('/api/users', authenticateToken, usersRoutes);
 
 // Error handling
 app.use(errorHandler);

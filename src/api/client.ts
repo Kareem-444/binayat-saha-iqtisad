@@ -190,3 +190,18 @@ export const inventoryPermissionsApi = {
   create: (data: any) => api.post('/inventory-permissions', data),
   update: (id: number, data: any) => api.put(`/inventory-permissions/${id}`, data),
 };
+
+// Settings
+export const settingsApi = {
+  getCompany: () => api.get('/settings/company'),
+  updateCompany: (data: any) => api.put('/settings/company', data),
+};
+
+// Users (admin)
+export const usersApi = {
+  list: () => api.get('/users'),
+  create: (data: any) => api.post('/users', data),
+  updateRole: (id: number, role: string) => api.put(`/users/${id}/role`, { role }),
+  deactivate: (id: number) => api.delete(`/users/${id}`),
+};
+
