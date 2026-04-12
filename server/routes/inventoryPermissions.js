@@ -470,4 +470,76 @@ router.put('/:id', requireRole('admin', 'manager'), validate(permissionSchema), 
   }
 });
 
+// DELETE /api/inventory-permissions/:id
+router.delete('/:id', requireRole('admin', 'manager'), async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { id } = req.params;
+
+    // Fetch the permission to know direction
+    const permResult = await client.query('SELECT * FROM inventory_permissions WHERE id = $1', [id]);
+    if (permResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'الإذن غير موجود' });
+    }
+    const permission = permResult.rows[0];
+
+    // Fetch all items to reverse stock
+    const itemsResult = await client.query('SELECT * FROM inventory_permission_items WHERE permission_id = $1', [id]);
+
+    // Reverse stock changes
+    for (const item of itemsResult.rows) {
+      if (permission.direction === 'add') {
+        // Was an addition — reverse by decreasing stock
+        await client.query(
+          'UPDATE inventory_items SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2',
+          [item.quantity, item.item_id]
+        );
+      } else {
+        // Was a dispense — reverse by increasing stock
+        await client.query(
+          'UPDATE inventory_items SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2',
+          [item.quantity, item.item_id]
+        );
+        // If it was a warehouse transfer, reverse the target warehouse too
+        if (permission.target_type === 'warehouse' && permission.target_warehouse_id) {
+          const targetItemRes = await client.query(
+            'SELECT id FROM inventory_items WHERE name = $1 AND warehouse_id = $2',
+            [item.item_name, permission.target_warehouse_id]
+          );
+          if (targetItemRes.rows.length > 0) {
+            await client.query(
+              'UPDATE inventory_items SET quantity = GREATEST(quantity - $1, 0), updated_at = NOW() WHERE id = $2',
+              [item.quantity, targetItemRes.rows[0].id]
+            );
+          }
+        }
+      }
+    }
+
+    // Delete related movements
+    await client.query(
+      `DELETE FROM inventory_movements WHERE reference_type = 'permission' AND reference_id = $1`,
+      [id]
+    );
+
+    // Delete permission items
+    await client.query('DELETE FROM inventory_permission_items WHERE permission_id = $1', [id]);
+
+    // Delete the permission itself
+    await client.query('DELETE FROM inventory_permissions WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'تم حذف الإذن بنجاح' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
 export default router;
+
