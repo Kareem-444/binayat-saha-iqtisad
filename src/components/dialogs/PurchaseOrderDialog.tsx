@@ -49,16 +49,13 @@ export default function PurchaseOrderDialog({ open, onOpenChange, editItem }: Pu
           notes: editItem.notes || ""
         });
         
-        // Robust fallback for items array name
-        const poItems = editItem.items || editItem.purchase_order_items || editItem.order_items || editItem.purchaseOrderItems || [];
-        
-        if (poItems.length > 0) {
-          const mappedItems = poItems.map((item: any) => ({
+        if (editItem.items && editItem.items.length > 0) {
+          const mappedItems = editItem.items.map((item: any) => ({
             id: item.id,
-            item_name: item.item_name || item.name || item.product_name || "",
+            item_name: item.item_name || "",
             unit: item.unit || "",
-            quantity: Number(item.quantity || item.qty || 1),
-            unit_price: Number(item.unit_price || item.price || item.total_price || 0)
+            quantity: Number(item.quantity || 1),
+            unit_price: Number(item.unit_price || 0)
           }));
           setItems(mappedItems);
         } else {
