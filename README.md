@@ -75,6 +75,7 @@ binayat-saha-iqtisad/
 │   │   ├── Dashboard.tsx        # لوحة التحكم الرئيسية
 │   │   ├── Projects.tsx         # إدارة المشاريع
 │   │   ├── Inventory.tsx        # إدارة المخزون
+│   │   ├── PermissionsList.tsx  # سجل أذونات المخزون (وارد/صادر)
 │   │   ├── Procurement.tsx      # المشتريات وأوامر الشراء
 │   │   ├── Employees.tsx        # إدارة الموظفين
 │   │   ├── Equipment.tsx        # إدارة المعدات
@@ -101,6 +102,7 @@ binayat-saha-iqtisad/
 │   │   ├── projects.js          # CRUD المشاريع
 │   │   ├── inventory.js         # CRUD أصناف المخزون
 │   │   ├── inventoryMovements.js # حركات المخزون (وارد/صادر)
+│   │   ├── inventoryPermissions.js # أذونات المخزون الرسمية (وارد/صادر)
 │   │   ├── warehouses.js        # إدارة المستودعات
 │   │   ├── suppliers.js         # إدارة الموردين
 │   │   ├── purchaseOrders.js    # أوامر الشراء
@@ -161,7 +163,14 @@ binayat-saha-iqtisad/
 - حساب القيمة الكلية تلقائياً
 - بحث وتصفية حسب الفئة
 
-### 4. إدارة المستودعات (Warehouses)
+### 4. أذونات المخزون (Inventory Permissions)
+- **إصدار أذونات رسمية** — إضافة (وارد) وصرف (منصرف) مع تفاصيل كاملة.
+- **عرض الإذن (View)** — نافذة عرض للقراءة فقط تعرض كافة تفاصيل الإذن والبنود والتوقيعات.
+- **تصدير Word** — توليد مستند Word رسمي (docx) بتنسيق احترافي للأذونات.
+- **حذف مع عكس المخزون** — إمكانية حذف الإذن مع استرجاع/خصم الكميات من المخزون تلقائياً في معاملة واحدة (Transaction).
+- تتبع الموردين، المقاولين، السائقين، وأرقام السيارات.
+
+### 5. إدارة المستودعات (Warehouses)
 - إنشاء وإدارة المستودعات
 - ربط الأصناف بالمستودعات
 - بيانات المسؤول ورقم التواصل
@@ -234,6 +243,8 @@ binayat-saha-iqtisad/
 | `documents` | المستندات المرفوعة |
 | `notifications` | الإشعارات |
 | `activity_log` | سجل النشاطات |
+| `inventory_permissions` | أذونات المخزون الرسمية |
+| `inventory_permission_items` | البنود المقترنة بالأذونات |
 | `financial_monthly` | الملخص المالي الشهري |
 
 ---
@@ -259,6 +270,7 @@ binayat-saha-iqtisad/
 | المشاريع | `/api/projects` | `GET`, `GET/:id`, `POST`, `PUT/:id`, `DELETE/:id` |
 | المخزون | `/api/inventory` | `GET`, `GET/low-stock`, `GET/:id`, `POST`, `PUT/:id`, `DELETE/:id` |
 | حركات المخزون | `/api/inventory-movements` | `GET?item_id=X`, `POST` |
+| أذونات المخزون | `/api/inventory-permissions` | `GET`, `GET/:id`, `POST`, `PUT/:id`, `DELETE/:id` |
 | المستودعات | `/api/warehouses` | `GET`, `POST`, `PUT/:id`, `DELETE/:id` |
 | الموردون | `/api/suppliers` | `GET`, `GET/:id`, `POST`, `PUT/:id`, `DELETE/:id` |
 | أوامر الشراء | `/api/purchase-orders` | `GET`, `GET/:id`, `POST`, `PUT/:id`, `PATCH/:id/status`, `DELETE/:id` |
