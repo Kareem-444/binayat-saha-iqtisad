@@ -13,7 +13,7 @@ import { Plus, Trash2 } from "lucide-react";
 interface PurchaseOrderItem {
   id?: number;
   item_name: string;
-  unit?: string; // Stored in item_name visually for now or skipped
+  unit?: string;
   quantity: number;
   unit_price: number;
   total?: number;
@@ -48,8 +48,19 @@ export default function PurchaseOrderDialog({ open, onOpenChange, editItem }: Pu
           status: editItem.status || "قيد الانتظار",
           notes: editItem.notes || ""
         });
-        if (editItem.items && editItem.items.length > 0) {
-          setItems(editItem.items);
+        
+        // Robust fallback for items array name
+        const poItems = editItem.items || editItem.purchase_order_items || editItem.order_items || editItem.purchaseOrderItems || [];
+        
+        if (poItems.length > 0) {
+          const mappedItems = poItems.map((item: any) => ({
+            id: item.id,
+            item_name: item.item_name || item.name || item.product_name || "",
+            unit: item.unit || "",
+            quantity: Number(item.quantity || item.qty || 1),
+            unit_price: Number(item.unit_price || item.price || item.total_price || 0)
+          }));
+          setItems(mappedItems);
         } else {
           setItems([]);
         }
@@ -105,7 +116,7 @@ export default function PurchaseOrderDialog({ open, onOpenChange, editItem }: Pu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl" dir="rtl">
+      <DialogContent aria-describedby={undefined} className="max-w-3xl" dir="rtl">
         <DialogHeader>
           <DialogTitle>{editItem ? "تعديل طلب الشراء" : "إضافة طلب شراء جديد"}</DialogTitle>
         </DialogHeader>

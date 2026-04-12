@@ -132,27 +132,35 @@ function ViewPurchaseOrderModal({
                   </tr>
                 </thead>
                 <tbody>
-                  {(po.items || []).length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-6 text-muted-foreground border-b border-border/50">
-                        لا توجد أصناف مضافة لهذا الطلب.
-                      </td>
-                    </tr>
-                  ) : (
-                    (po.items || []).map((item: any, idx: number) => {
-                      const total = Number(item.quantity || 0) * Number(item.unit_price || 0);
+                  {(() => {
+                    const poItems = po.items || po.purchase_order_items || po.order_items || po.purchaseOrderItems || [];
+                    if (poItems.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-muted-foreground border-b border-border/50">
+                            لا توجد أصناف مضافة لهذا الطلب.
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return poItems.map((item: any, idx: number) => {
+                      const itemName = item.item_name || item.name || item.product_name || "—";
+                      const itemUnit = item.unit || "—";
+                      const itemQty = Number(item.quantity || item.qty || 1);
+                      const itemPrice = Number(item.unit_price || item.price || item.total_price || 0);
+                      const total = itemQty * itemPrice;
                       return (
                         <tr key={idx} className={`border-b border-border/50 last:border-0 ${idx % 2 === 1 ? "bg-muted/20" : ""}`}>
                           <td className="py-2 px-3 text-muted-foreground">{idx + 1}</td>
-                          <td className="py-2 px-3 font-medium">{item.item_name}</td>
-                          <td className="py-2 px-3 text-muted-foreground">{item.unit || "—"}</td>
-                          <td className="py-2 px-3 font-bold">{Number(item.quantity).toLocaleString("ar-EG")}</td>
-                          <td className="py-2 px-3">{Number(item.unit_price || 0).toLocaleString("ar-EG")}</td>
+                          <td className="py-2 px-3 font-medium">{itemName}</td>
+                          <td className="py-2 px-3 text-muted-foreground">{itemUnit}</td>
+                          <td className="py-2 px-3 font-bold">{itemQty.toLocaleString("ar-EG")}</td>
+                          <td className="py-2 px-3">{itemPrice.toLocaleString("ar-EG")}</td>
                           <td className="py-2 px-3 font-semibold text-green-700">{total > 0 ? total.toLocaleString("ar-EG") : "—"}</td>
                         </tr>
                       );
-                    })
-                  )}
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

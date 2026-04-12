@@ -118,15 +118,18 @@ export async function generatePurchaseOrderExcel(po: any) {
   });
 
   // Rows 8+: Item rows
-  if (po.items && po.items.length > 0) {
-    po.items.forEach((item: any, idx: number) => {
+  const poItems = po.items || po.purchase_order_items || po.order_items || po.purchaseOrderItems || [];
+  if (poItems.length > 0) {
+    poItems.forEach((item: any, idx: number) => {
+      const q = Number(item.quantity || item.qty || 1);
+      const p = Number(item.unit_price || item.price || item.total_price || 0);
       const row = sheet.addRow([
         idx + 1,
-        item.item_name,
+        item.item_name || item.name || item.product_name || '—',
         item.unit || '-',
-        item.quantity,
-        item.unit_price,
-        item.quantity * item.unit_price
+        q,
+        p,
+        q * p
       ]);
       row.height = 20;
       
@@ -151,8 +154,12 @@ export async function generatePurchaseOrderExcel(po: any) {
   }
 
   // Last row: الإجمالي الكلي
-  const totalVal = po.items && po.items.length > 0 
-    ? po.items.reduce((acc: number, curr: any) => acc + (curr.quantity * curr.unit_price), 0)
+  const totalVal = poItems && poItems.length > 0 
+    ? poItems.reduce((acc: number, curr: any) => {
+        const q = Number(curr.quantity || curr.qty || 1);
+        const p = Number(curr.unit_price || curr.price || curr.total_price || 0);
+        return acc + (q * p);
+      }, 0)
     : po.total;
 
   const totalRow = sheet.addRow(['', '', '', '', 'الإجمالي الكلي', totalVal]);
